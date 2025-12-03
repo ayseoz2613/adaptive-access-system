@@ -15,12 +15,6 @@ class User(db.Model):
     trust_score = db.Column(db.Float, default=0.0)
     last_login_at = db.Column(db.DateTime, nullable=True)
     failed_login_attempts = db.Column(db.Integer, default=0)
-    
-    # Progressive lock için alanlar
-    locked_until = db.Column(db.DateTime, nullable=True)
-    last_ip = db.Column(db.String(50), nullable=True)
-    last_device_info = db.Column(db.String(255), nullable=True)
-    require_mfa = db.Column(db.Boolean, default=False)
 
     def set_password(self, plain_password: str):
         self.password_hash = bcrypt.generate_password_hash(plain_password).decode("utf-8")

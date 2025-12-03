@@ -1,0 +1,344 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Adaptive Access System - Test</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+        .container {
+            max-width: 600px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            padding: 40px;
+        }
+        h1 {
+            color: #333;
+            margin-bottom: 10px;
+            font-size: 28px;
+        }
+        .subtitle {
+            color: #666;
+            margin-bottom: 30px;
+            font-size: 14px;
+        }
+        .section {
+            margin-bottom: 30px;
+            padding: 20px;
+            background: #f8f9fa;
+            border-radius: 10px;
+        }
+        .section h2 {
+            color: #667eea;
+            margin-bottom: 15px;
+            font-size: 20px;
+        }
+        input, button {
+            width: 100%;
+            padding: 12px;
+            margin-bottom: 10px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            font-size: 14px;
+            transition: all 0.3s;
+        }
+        input:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+        button {
+            background: #667eea;
+            color: white;
+            border: none;
+            cursor: pointer;
+            font-weight: 600;
+            margin-top: 10px;
+        }
+        button:hover {
+            background: #5568d3;
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+        }
+        button:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+            transform: none;
+        }
+        .result {
+            margin-top: 15px;
+            padding: 15px;
+            border-radius: 8px;
+            font-size: 13px;
+            white-space: pre-wrap;
+            word-wrap: break-word;
+            max-height: 300px;
+            overflow-y: auto;
+        }
+        .success {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+        .error {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+        .info {
+            background: #d1ecf1;
+            color: #0c5460;
+            border: 1px solid #bee5eb;
+        }
+        .token-display {
+            font-family: monospace;
+            font-size: 11px;
+            word-break: break-all;
+            background: #f8f9fa;
+            padding: 10px;
+            border-radius: 5px;
+            margin-top: 10px;
+        }
+        .status {
+            display: inline-block;
+            padding: 5px 10px;
+            border-radius: 5px;
+            font-size: 12px;
+            font-weight: 600;
+            margin-left: 10px;
+        }
+        .status.online {
+            background: #28a745;
+            color: white;
+        }
+        .status.offline {
+            background: #dc3545;
+            color: white;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔐 Adaptive Access System</h1>
+        <p class="subtitle">Test ve Deneme Arayüzü</p>
+        
+        <div class="section">
+            <h2>🌐 Bağlantı Durumu</h2>
+            <button onclick="checkHealth()">Sağlık Kontrolü</button>
+            <div id="healthResult"></div>
+        </div>
+
+        <div class="section">
+            <h2>📝 Kullanıcı Kaydı</h2>
+            <input type="email" id="registerEmail" placeholder="Email (örn: test@example.com)">
+            <input type="password" id="registerPassword" placeholder="Şifre (min 8 karakter)">
+            <button onclick="register()">Kayıt Ol</button>
+            <div id="registerResult"></div>
+        </div>
+
+        <div class="section">
+            <h2>🔑 Giriş Yap</h2>
+            <input type="email" id="loginEmail" placeholder="Email">
+            <input type="password" id="loginPassword" placeholder="Şifre">
+            <button onclick="login()">Giriş Yap</button>
+            <div id="loginResult"></div>
+        </div>
+
+        <div class="section">
+            <h2>👤 Kullanıcı Bilgileri</h2>
+            <button onclick="getUserInfo()" id="userInfoBtn">Bilgileri Getir</button>
+            <div id="userInfoResult"></div>
+        </div>
+
+        <div class="section">
+            <h2>🧪 Progressive Lock Testi</h2>
+            <p style="font-size: 12px; color: #666; margin-bottom: 10px;">
+                3 hatalı giriş → 30 saniye bekleme<br>
+                5 hatalı giriş → 2 dakika kilit<br>
+                7 hatalı giriş → 24 saat kilit
+            </p>
+            <input type="email" id="lockTestEmail" placeholder="Email">
+            <input type="password" id="lockTestPassword" placeholder="Yanlış Şifre">
+            <button onclick="testLock()">Hatalı Giriş Dene</button>
+            <div id="lockTestResult"></div>
+        </div>
+    </div>
+
+    <script>
+        const API_URL = 'http://localhost:5001';
+        let accessToken = localStorage.getItem('accessToken');
+
+        function showResult(elementId, message, type = 'info') {
+            const element = document.getElementById(elementId);
+            element.className = `result ${type}`;
+            element.textContent = message;
+        }
+
+        async function checkHealth() {
+            try {
+                const response = await fetch(`${API_URL}/api/health`);
+                const data = await response.json();
+                if (response.ok) {
+                    showResult('healthResult', `✅ Sunucu çalışıyor!\n${JSON.stringify(data, null, 2)}`, 'success');
+                } else {
+                    showResult('healthResult', `❌ Hata: ${JSON.stringify(data, null, 2)}`, 'error');
+                }
+            } catch (error) {
+                showResult('healthResult', `❌ Bağlantı hatası: ${error.message}\n\nSunucunun çalıştığından emin olun:\npython run.py`, 'error');
+            }
+        }
+
+        async function register() {
+            const email = document.getElementById('registerEmail').value;
+            const password = document.getElementById('registerPassword').value;
+
+            if (!email || !password) {
+                showResult('registerResult', '❌ Email ve şifre gerekli!', 'error');
+                return;
+            }
+
+            try {
+                const response = await fetch(`${API_URL}/api/auth/register`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ email, password })
+                });
+
+                const data = await response.json();
+                if (response.ok) {
+                    showResult('registerResult', `✅ Kayıt başarılı!\n${JSON.stringify(data, null, 2)}`, 'success');
+                } else {
+                    showResult('registerResult', `❌ Hata (${response.status}):\n${JSON.stringify(data, null, 2)}`, 'error');
+                }
+            } catch (error) {
+                showResult('registerResult', `❌ Bağlantı hatası: ${error.message}`, 'error');
+            }
+        }
+
+        async function login() {
+            const email = document.getElementById('loginEmail').value;
+            const password = document.getElementById('loginPassword').value;
+
+            if (!email || !password) {
+                showResult('loginResult', '❌ Email ve şifre gerekli!', 'error');
+                return;
+            }
+
+            try {
+                const response = await fetch(`${API_URL}/api/auth/login`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ email, password })
+                });
+
+                const data = await response.json();
+                if (response.ok) {
+                    accessToken = data.access_token;
+                    localStorage.setItem('accessToken', accessToken);
+                    showResult('loginResult', 
+                        `✅ Giriş başarılı!\n\nToken:\n${accessToken.substring(0, 50)}...\n\nMFA Gerekli: ${data.require_mfa || false}`,
+                        'success'
+                    );
+                } else {
+                    let message = `❌ Hata (${response.status}):\n${JSON.stringify(data, null, 2)}`;
+                    if (data.require_mfa) {
+                        message += '\n\n⚠️ MFA gerekiyor!';
+                    }
+                    if (data.remaining_seconds) {
+                        message += `\n\n⏱️ Kalan süre: ${data.remaining_seconds} saniye`;
+                    }
+                    showResult('loginResult', message, 'error');
+                }
+            } catch (error) {
+                showResult('loginResult', `❌ Bağlantı hatası: ${error.message}`, 'error');
+            }
+        }
+
+        async function getUserInfo() {
+            if (!accessToken) {
+                showResult('userInfoResult', '❌ Önce giriş yapmalısınız!', 'error');
+                return;
+            }
+
+            try {
+                const response = await fetch(`${API_URL}/api/auth/me`, {
+                    headers: {
+                        'Authorization': `Bearer ${accessToken}`
+                    }
+                });
+
+                const data = await response.json();
+                if (response.ok) {
+                    showResult('userInfoResult', `✅ Kullanıcı Bilgileri:\n${JSON.stringify(data, null, 2)}`, 'success');
+                } else {
+                    showResult('userInfoResult', `❌ Hata (${response.status}):\n${JSON.stringify(data, null, 2)}`, 'error');
+                    if (response.status === 401) {
+                        accessToken = null;
+                        localStorage.removeItem('accessToken');
+                    }
+                }
+            } catch (error) {
+                showResult('userInfoResult', `❌ Bağlantı hatası: ${error.message}`, 'error');
+            }
+        }
+
+        async function testLock() {
+            const email = document.getElementById('lockTestEmail').value;
+            const password = document.getElementById('lockTestPassword').value;
+
+            if (!email || !password) {
+                showResult('lockTestResult', '❌ Email ve şifre gerekli!', 'error');
+                return;
+            }
+
+            try {
+                const response = await fetch(`${API_URL}/api/auth/login`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ email, password })
+                });
+
+                const data = await response.json();
+                let message = `Durum: ${response.status}\n${JSON.stringify(data, null, 2)}`;
+                
+                if (response.status === 429) {
+                    message += `\n\n⏱️ ${data.wait_seconds || 30} saniye bekleyin`;
+                } else if (response.status === 423) {
+                    message += `\n\n🔒 Hesap kilitlendi!\n⏱️ Kalan süre: ${data.remaining_seconds || 0} saniye`;
+                } else if (response.status === 401) {
+                    message += `\n\n❌ Hatalı giriş denemesi`;
+                }
+
+                showResult('lockTestResult', message, response.ok ? 'success' : 'error');
+            } catch (error) {
+                showResult('lockTestResult', `❌ Bağlantı hatası: ${error.message}`, 'error');
+            }
+        }
+
+        // Sayfa yüklendiğinde token kontrolü
+        window.onload = function() {
+            if (accessToken) {
+                document.getElementById('userInfoBtn').textContent = 'Bilgileri Getir (Token mevcut)';
+            }
+        };
+    </script>
+</body>
+</html>
+

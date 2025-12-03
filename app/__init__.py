@@ -16,7 +16,15 @@ def create_app():
     migrate.init_app(app, db)
     bcrypt.init_app(app)
 
-    # Blueprint’leri register et
+    # CORS desteği - test.html için gerekli
+    @app.after_request
+    def after_request(response):
+        response.headers.add('Access-Control-Allow-Origin', '*')
+        response.headers.add('Access-Control-Allow-Headers', 'Content-Type,Authorization')
+        response.headers.add('Access-Control-Allow-Methods', 'GET,PUT,POST,DELETE,OPTIONS')
+        return response
+
+    # Blueprint'leri register et
     from .auth_routes import auth_bp
     app.register_blueprint(auth_bp, url_prefix="/api/auth")
 
