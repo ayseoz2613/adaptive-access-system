@@ -20,6 +20,19 @@ def create_app():
     from .auth_routes import auth_bp
     app.register_blueprint(auth_bp, url_prefix="/api/auth")
 
+    # Root path
+    @app.get("/")
+    def index():
+        return {
+            "message": "Adaptive Access System API",
+            "endpoints": {
+                "health": "/api/health",
+                "register": "/api/auth/register",
+                "login": "/api/auth/login",
+                "me": "/api/auth/me"
+            }
+        }, 200
+
     # Sağlık kontrolü
     @app.get("/api/health")
     def health():
