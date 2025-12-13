@@ -1,3 +1,4 @@
+# app/models.py
 from datetime import datetime
 from . import db, bcrypt
 
@@ -11,10 +12,15 @@ class User(db.Model):
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     is_active = db.Column(db.Boolean, default=True)
 
-    # ileride kullanmak için alanlar
+    # Trust / login metrikleri
     trust_score = db.Column(db.Float, default=0.0)
     last_login_at = db.Column(db.DateTime, nullable=True)
     failed_login_attempts = db.Column(db.Integer, default=0)
+
+    # Week 4 - MFA OTP alanları (migration gerekir)
+    mfa_code_hash = db.Column(db.String(255), nullable=True)
+    mfa_expires_at = db.Column(db.DateTime, nullable=True)
+    mfa_pending = db.Column(db.Boolean, default=False)
 
     def set_password(self, plain_password: str):
         self.password_hash = bcrypt.generate_password_hash(plain_password).decode("utf-8")
