@@ -16,6 +16,9 @@ class User(db.Model):
     last_login_at = db.Column(db.DateTime, nullable=True)
     failed_login_attempts = db.Column(db.Integer, default=0)
 
+    # ✅ Week 5: Progressive Lock (temporary lock)
+    locked_until = db.Column(db.DateTime, nullable=True)
+
     # Week 4: Emergency Lock + session invalidation
     is_locked = db.Column(db.Boolean, default=False, nullable=False)
     token_version = db.Column(db.Integer, default=0, nullable=False)

@@ -18,7 +18,8 @@ depends_on = None
 def upgrade():
     op.add_column("users", sa.Column("mfa_code_hash", sa.String(length=255), nullable=True))
     op.add_column("users", sa.Column("mfa_expires_at", sa.DateTime(), nullable=True))
-    op.add_column("users", sa.Column("mfa_pending", sa.Boolean(), nullable=False, server_default=sa.text("0")))
+    op.add_column("users", sa.Column("mfa_pending", sa.Boolean(), nullable=False, server_default=sa.text("false")))
+
 
 
 def downgrade():
