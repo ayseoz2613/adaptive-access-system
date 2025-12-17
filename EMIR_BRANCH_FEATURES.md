@@ -1,8 +1,8 @@
 # Emir Branch - Özellikler ve Kullanım Kılavuzu
 
 ## 📋 İçindekiler
-1. [Eklenen Özellikler](#eklenen-özellikler)
-2. [Mevcut Tüm Özellikler](#mevcut-tüm-özellikler)
+1. [Week 1-2: Tamamlanan Özellikler](#week-1-2-tamamlanan-özellikler)
+2. [Week 3: Yapılacaklar](#week-3-yapılacaklar)
 3. [Oluşturulan/Düzenlenen Dosyalar](#oluşturulandüzenlenen-dosyalar)
 4. [Programı Çalıştırma](#programı-çalıştırma)
 5. [Test Senaryoları](#test-senaryoları)
@@ -11,7 +11,8 @@
 
 ---
 
-## 🎯 Eklenen Özellikler
+<details>
+<summary><h2>📅 Week 1-2: Tamamlanan Özellikler</h2></summary>
 
 ### 1. Progressive Lock (İlerlemeli Kilitleme) Mekanizması
 - **3 hatalı giriş** → 30 saniye bekleme süresi (429 Too Many Attempts)
@@ -42,35 +43,81 @@
 - Hata kodları: 400, 401, 403, 404, 409, 423, 429, 500
 - Frontend entegrasyonu için hazır format
 
----
-
-## 📊 Mevcut Tüm Özellikler
-
-### Temel Özellikler
+### 5. Temel Özellikler
 ✅ **Kullanıcı Kaydı** - Email ve şifre ile kayıt
 ✅ **Kullanıcı Girişi** - JWT token tabanlı authentication
 ✅ **Token Doğrulama** - Access token ve refresh token
 ✅ **Kullanıcı Bilgileri** - Token ile korumalı endpoint
 
-### Güvenlik Özellikleri
+### 6. Güvenlik Özellikleri
 ✅ **Progressive Lock** - İlerlemeli hesap kilitleme
 ✅ **MFA Tetikleme** - IP/cihaz değişikliği tespiti
 ✅ **Şifre Hashleme** - bcrypt ile güvenli şifre saklama
 ✅ **Login Attempt Tracking** - Tüm giriş denemeleri kaydedilir
 ✅ **Risk Score Tracking** - Risk skoru alanları hazır (ileride kullanılacak)
 
-### API Özellikleri
+### 7. API Özellikleri
 ✅ **RESTful API** - Standart REST endpoint'leri
 ✅ **JSON Response** - Tüm response'lar JSON formatında
 ✅ **Error Handling** - Standart hata yönetimi
 ✅ **Health Check** - Sistem durumu kontrolü
 ✅ **Root Endpoint** - API bilgileri ve endpoint listesi
 
-### Veritabanı Özellikleri
+### 8. Veritabanı Özellikleri
 ✅ **SQLAlchemy ORM** - Veritabanı yönetimi
 ✅ **Flask-Migrate** - Database migration desteği
 ✅ **SQLite/PostgreSQL** - Esnek veritabanı desteği
 ✅ **Login Attempt History** - Giriş geçmişi kayıtları
+
+</details>
+
+---
+
+<details>
+<summary><h2>✅ Week 3: Tamamlanan Özellikler</h2></summary>
+
+### 1. Risk Flag'lerin Netleştirilmesi ✅
+- ✅ Login response'da IP değişimi ve cihaz değişimi bilgisinin risk flag olarak açık ve okunur şekilde tutulması
+- ✅ `ip_changed` ve `device_changed` flag'lerinin response'a eklenmesi
+- ✅ Backend iç akışında bu bilgilerin risk flag olarak netleştirilmesi
+- ✅ `compute_risk_from_last_success` fonksiyonu artık `ip_changed` ve `device_changed` boolean flag'lerini döndürüyor
+- ✅ Login response'da risk flag'leri açık şekilde görünüyor: `{"ip_changed": true/false, "device_changed": true/false}`
+
+### 2. RiskDataPacket Kullanımının Doğrulanması ✅
+- ✅ RiskDataPacket'in her login denemesinde (başarılı/başarısız) kesin olarak oluşturulduğunun doğrulanması
+- ✅ RiskDataPacket'in kullanılabilir olduğunun garantilenmesi
+- ✅ Açıklayıcı yorum satırları eklendi: "Her login denemesinde kesin olarak oluşturulur ve kullanılabilir"
+- ✅ RiskDataPacket'in `user_id`'si login akışında güncelleniyor
+
+### 3. Login Attempt Kayıtlarına Açıklayıcı Yorumlar ✅
+- ✅ Login attempt kayıtlarının gelecekte risk analizi için kullanılacağını açıklayan yorumlar eklendi
+- ✅ Her login denemesinin (başarılı/başarısız) neden kaydedildiğinin açıklanması
+- ✅ `LoginAttempt` modeline detaylı docstring eklendi
+- ✅ Her alanın risk analizindeki rolü açıklandı (IP değişimi, cihaz değişimi, konum, zaman analizi için)
+
+### 4. Test Arayüzü Güncellemeleri ✅
+- ✅ `test.html` dosyası güncellendi - yeni risk flag'leri gösteriliyor
+- ✅ Risk analizi bilgileri (risk_level, risk_score, risk_reasons) görüntüleniyor
+- ✅ Yeni "Risk Analizi Testi" bölümü eklendi - farklı User-Agent ile test yapılabiliyor
+- ✅ Response formatı güncellendi (`{ok: true, data: {...}}` formatına uyumlu)
+
+### 5. Kod Temizliği ✅
+- ✅ Gereksiz test scripti (`test_new_features.sh`) silindi
+- ✅ Tüm değişiklikler küçük, açıklayıcı ve sade dokunuşlar olarak yapıldı
+
+### Sprint Hedefleri
+- ✅ Risk-related login metadata validated and stabilized
+- ✅ IP and device change indicators clarified for future risk evaluation
+- ✅ Login attempt records verified for analysis readiness
+- ✅ System prepared for Risk Engine scoring implementation
+
+### Notlar
+- ⚠️ Yeni risk scoring EKLEMEDİK (sadece mevcut yapı netleştirildi)
+- ⚠️ GeoIP veya zaman analizi EKLEMEDİK (sadece mevcut veriler hazırlandı)
+- ✅ Mevcut çalışan kod bozulmadı
+- ✅ Küçük, açıklayıcı, sade dokunuşlar yapıldı
+
+</details>
 
 ---
 
@@ -93,7 +140,9 @@
 2. **`app/auth_routes.py`** - Login endpoint'i güncellendi:
    - Progressive lock kontrolü eklendi
    - MFA tetikleme kontrolü eklendi
-   - RiskDataPacket oluşturma eklendi
+   - RiskDataPacket oluşturma eklendi (her login denemesinde)
+   - IP ve cihaz değişimi risk flag'leri eklendi (`ip_changed`, `device_changed`)
+   - Login attempt kayıtlarına açıklayıcı yorumlar eklendi
    - Standart error handling kullanılıyor
 
 3. **`app/__init__.py`** - Root path endpoint eklendi
@@ -282,10 +331,19 @@ http://localhost:5001
 - **Response:** `200 OK`
   ```json
   {
-    "access_token": "...",
-    "refresh_token": "...",
-    "token_type": "Bearer",
-    "require_mfa": false
+    "ok": true,
+    "data": {
+      "access_token": "...",
+      "refresh_token": "...",
+      "token_type": "Bearer",
+      "risk_level": "safe",
+      "risk_score": 0.0,
+      "ui_state": "normal",
+      "alert_type": "none",
+      "message_key": "auth.safe",
+      "ip_changed": false,
+      "device_changed": false
+    }
   }
   ```
 - **Errors:**
@@ -325,7 +383,9 @@ http://localhost:5001
 **app/risk_data.py** - RiskDataPacket dataclass yapısı:
 - IP adresi, cihaz bilgisi, giriş zamanı, konum bilgisi içerir
 - Flask request'ten otomatik oluşturulur
+- Her login denemesinde (başarılı/başarısız) kesin olarak oluşturulur ve kullanılabilir
 - Week 3'te Risk Engine'e aktarılacak veriyi temsil eder
+- Açıklayıcı yorumlar eklendi
 
 **app/error_handlers.py** - Standart error response formatı:
 - HTTP status code → UI error message eşleştirmesi
@@ -418,9 +478,10 @@ python run.py
 3. **Test Senaryoları:**
    - ✅ **Sağlık Kontrolü:** Sunucunun çalıştığını kontrol edin
    - ✅ **Kullanıcı Kaydı:** Yeni kullanıcı oluşturun
-   - ✅ **Giriş Yap:** Başarılı giriş test edin
+   - ✅ **Giriş Yap:** Başarılı giriş test edin (risk flag'leri görüntülenir)
    - ✅ **Kullanıcı Bilgileri:** Token ile bilgileri görüntüleyin
    - ✅ **Progressive Lock:** Hatalı giriş denemeleri yapın (3, 5, 7 kez)
+   - ✅ **Risk Analizi Testi:** Farklı User-Agent ile giriş yaparak IP/cihaz değişimi flag'lerini test edin
 
 ### Test Sayfası Özellikleri
 - 🎨 Modern ve kullanıcı dostu arayüz
@@ -429,6 +490,9 @@ python run.py
 - 📊 JSON response'ları görüntüleme
 - 🔐 Token otomatik saklama (localStorage)
 - ⏱️ Progressive lock sürelerini görüntüleme
+- 🚩 Risk flag'leri görüntüleme (ip_changed, device_changed)
+- 📈 Risk analizi bilgileri (risk_level, risk_score, risk_reasons)
+- 🔍 Risk Analizi Testi bölümü - farklı User-Agent ile test
 
 ---
 
@@ -457,4 +521,6 @@ python run.py
 - MFA tetikleme, şüpheli girişleri tespit eder
 - RiskDataPacket yapısı, gelecekteki risk analizi için hazır
 - Standart error handling, frontend entegrasyonunu kolaylaştırır
-
+- Week 3'te risk flag'leri netleştirildi ve sistem Risk Engine entegrasyonu için hazırlandı
+- IP ve cihaz değişimi flag'leri açık ve okunur şekilde response'da görünüyor
+- Login attempt kayıtları risk analizi için tutarlı ve eksiksiz şekilde kaydediliyor

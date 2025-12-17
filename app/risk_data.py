@@ -2,6 +2,7 @@
 RiskDataPacket yapısı - Risk Engine'e aktarılacak veriyi temsil eder.
 
 Bu yapı Week 3'te Risk Engine'e aktarılacak veriyi temsil edecek.
+Her login denemesinde (başarılı/başarısız) kesin olarak oluşturulur ve kullanılabilir.
 """
 from dataclasses import dataclass
 from datetime import datetime
@@ -13,11 +14,14 @@ class RiskDataPacket:
     """
     Risk analizi için gerekli veri paketi.
     
+    Her login denemesinde kesin olarak oluşturulur ve kullanılabilir.
+    Bu paket gelecekte Risk Engine'e aktarılacak veriyi temsil eder.
+    
     Attributes:
-        ip_address: İstek yapan IP adresi
-        device_info: Cihaz bilgisi (user agent, device fingerprint vb.)
-        login_time: Giriş zamanı
-        location: Konum bilgisi (opsiyonel)
+        ip_address: İstek yapan IP adresi (IP değişimi tespiti için)
+        device_info: Cihaz bilgisi (user agent, device fingerprint vb.) (cihaz değişimi tespiti için)
+        login_time: Giriş zamanı (zaman analizi için)
+        location: Konum bilgisi (opsiyonel) (konum değişimi tespiti için)
         user_id: Kullanıcı ID (opsiyonel)
     """
     ip_address: str

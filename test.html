@@ -173,6 +173,18 @@
             <button onclick="testLock()">Hatalı Giriş Dene</button>
             <div id="lockTestResult"></div>
         </div>
+
+        <div class="section">
+            <h2>🔍 Risk Analizi Testi</h2>
+            <p style="font-size: 12px; color: #666; margin-bottom: 10px;">
+                Farklı User-Agent ile giriş yaparak IP/cihaz değişimi flag'lerini test edin
+            </p>
+            <input type="email" id="riskTestEmail" placeholder="Email">
+            <input type="password" id="riskTestPassword" placeholder="Şifre">
+            <input type="text" id="riskTestUserAgent" placeholder="User-Agent (örn: DifferentBrowser/2.0)">
+            <button onclick="testRiskFlags()">Risk Flag'lerini Test Et</button>
+            <div id="riskTestResult"></div>
+        </div>
     </div>
 
     <script>
@@ -218,7 +230,7 @@
                 });
 
                 const data = await response.json();
-                if (response.ok) {
+                if (response.ok && data.ok) {
                     showResult('registerResult', `✅ Kayıt başarılı!\n${JSON.stringify(data, null, 2)}`, 'success');
                 } else {
                     showResult('registerResult', `❌ Hata (${response.status}):\n${JSON.stringify(data, null, 2)}`, 'error');
@@ -247,20 +259,45 @@
                 });
 
                 const data = await response.json();
-                if (response.ok) {
-                    accessToken = data.access_token;
-                    localStorage.setItem('accessToken', accessToken);
-                    showResult('loginResult', 
-                        `✅ Giriş başarılı!\n\nToken:\n${accessToken.substring(0, 50)}...\n\nMFA Gerekli: ${data.require_mfa || false}`,
-                        'success'
-                    );
+                if (response.ok && data.ok && data.data) {
+                    // Yeni response formatı: {ok: true, data: {...}}
+                    const loginData = data.data;
+                    accessToken = loginData.access_token;
+                    if (accessToken) {
+                        localStorage.setItem('accessToken', accessToken);
+                    }
+                    
+                    // Yeni özellikler: Risk flag'leri ve risk bilgileri
+                    let message = `✅ Giriş başarılı!\n\n`;
+                    
+                    if (accessToken) {
+                        message += `Token: ${accessToken.substring(0, 50)}...\n\n`;
+                    }
+                    
+                    // Risk bilgileri
+                    message += `📊 Risk Analizi:\n`;
+                    message += `  Risk Seviyesi: ${loginData.risk_level || 'N/A'}\n`;
+                    message += `  Risk Skoru: ${loginData.risk_score || 0}\n`;
+                    message += `  UI Durumu: ${loginData.ui_state || 'N/A'}\n\n`;
+                    
+                    // Risk flag'leri (yeni özellikler)
+                    message += `🚩 Risk Flag'leri:\n`;
+                    message += `  IP Değişti: ${loginData.ip_changed === true ? '✅ Evet' : '❌ Hayır'}\n`;
+                    message += `  Cihaz Değişti: ${loginData.device_changed === true ? '✅ Evet' : '❌ Hayır'}\n\n`;
+                    
+                    if (loginData.risk_reasons) {
+                        message += `📝 Risk Nedenleri: ${loginData.risk_reasons}\n\n`;
+                    }
+                    
+                    message += `\nTam Response:\n${JSON.stringify(loginData, null, 2)}`;
+                    
+                    showResult('loginResult', message, 'success');
                 } else {
                     let message = `❌ Hata (${response.status}):\n${JSON.stringify(data, null, 2)}`;
-                    if (data.require_mfa) {
-                        message += '\n\n⚠️ MFA gerekiyor!';
-                    }
-                    if (data.remaining_seconds) {
-                        message += `\n\n⏱️ Kalan süre: ${data.remaining_seconds} saniye`;
+                    if (data.error && data.error.details) {
+                        if (data.error.details.remaining_seconds) {
+                            message += `\n\n⏱️ Kalan süre: ${data.error.details.remaining_seconds} saniye`;
+                        }
                     }
                     showResult('loginResult', message, 'error');
                 }
@@ -283,8 +320,8 @@
                 });
 
                 const data = await response.json();
-                if (response.ok) {
-                    showResult('userInfoResult', `✅ Kullanıcı Bilgileri:\n${JSON.stringify(data, null, 2)}`, 'success');
+                if (response.ok && data.ok && data.data) {
+                    showResult('userInfoResult', `✅ Kullanıcı Bilgileri:\n${JSON.stringify(data.data, null, 2)}`, 'success');
                 } else {
                     showResult('userInfoResult', `❌ Hata (${response.status}):\n${JSON.stringify(data, null, 2)}`, 'error');
                     if (response.status === 401) {
@@ -329,6 +366,59 @@
                 showResult('lockTestResult', message, response.ok ? 'success' : 'error');
             } catch (error) {
                 showResult('lockTestResult', `❌ Bağlantı hatası: ${error.message}`, 'error');
+            }
+        }
+
+        async function testRiskFlags() {
+            const email = document.getElementById('riskTestEmail').value;
+            const password = document.getElementById('riskTestPassword').value;
+            const userAgent = document.getElementById('riskTestUserAgent').value || 'TestBrowser/1.0';
+
+            if (!email || !password) {
+                showResult('riskTestResult', '❌ Email ve şifre gerekli!', 'error');
+                return;
+            }
+
+            try {
+                const response = await fetch(`${API_URL}/api/auth/login`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'User-Agent': userAgent
+                    },
+                    body: JSON.stringify({ email, password })
+                });
+
+                const data = await response.json();
+                if (response.ok && data.ok && data.data) {
+                    const loginData = data.data;
+                    let message = `✅ Risk Analizi Sonuçları:\n\n`;
+                    
+                    message += `📊 Risk Bilgileri:\n`;
+                    message += `  Risk Seviyesi: ${loginData.risk_level || 'N/A'}\n`;
+                    message += `  Risk Skoru: ${loginData.risk_score || 0}\n`;
+                    message += `  UI Durumu: ${loginData.ui_state || 'N/A'}\n`;
+                    message += `  Alert Tipi: ${loginData.alert_type || 'N/A'}\n\n`;
+                    
+                    message += `🚩 Risk Flag'leri:\n`;
+                    message += `  IP Değişti: ${loginData.ip_changed === true ? '✅ EVET' : '❌ HAYIR'}\n`;
+                    message += `  Cihaz Değişti: ${loginData.device_changed === true ? '✅ EVET' : '❌ HAYIR'}\n\n`;
+                    
+                    if (loginData.risk_reasons) {
+                        message += `📝 Risk Nedenleri:\n  ${loginData.risk_reasons}\n\n`;
+                    }
+                    
+                    message += `\n🔧 Test Detayları:\n`;
+                    message += `  User-Agent: ${userAgent}\n\n`;
+                    
+                    message += `\n📄 Tam Response:\n${JSON.stringify(loginData, null, 2)}`;
+                    
+                    showResult('riskTestResult', message, 'success');
+                } else {
+                    showResult('riskTestResult', `❌ Hata (${response.status}):\n${JSON.stringify(data, null, 2)}`, 'error');
+                }
+            } catch (error) {
+                showResult('riskTestResult', `❌ Bağlantı hatası: ${error.message}`, 'error');
             }
         }
 

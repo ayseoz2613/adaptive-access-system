@@ -14,6 +14,7 @@ from flask_jwt_extended import (
 
 from . import db
 from .models import User, LoginAttempt
+from .risk_data import RiskDataPacket
 
 auth_bp = Blueprint("auth", __name__)
 
@@ -145,7 +146,7 @@ def compute_risk_from_last_success(
     user_agent: str,
     device_info: str,
     location: str,
-) -> Tuple[float, str, str]:
+) -> Tuple[float, str, str, bool, bool]:
     """
     Basit kural tabanlı risk (if/else).
     Son başarılı girişle kıyas:
@@ -153,9 +154,14 @@ def compute_risk_from_last_success(
       - User-Agent değişimi
       - Device değişimi
       - Location değişimi
+    
+    Returns:
+        Tuple[risk_score, risk_level, risk_reasons, ip_changed, device_changed]
     """
     risk_score = 0.0
     reasons: List[str] = []
+    ip_changed = False
+    device_changed = False
 
     last_ok = (
         LoginAttempt.query
@@ -165,17 +171,22 @@ def compute_risk_from_last_success(
     )
 
     if last_ok:
+        # IP değişimi kontrolü - risk flag olarak açık ve okunur
         if last_ok.ip_address and ip and last_ok.ip_address != ip:
             risk_score += 30
             reasons.append("IP changed")
+            ip_changed = True
 
+        # User-Agent değişimi kontrolü
         if last_ok.user_agent and user_agent and last_ok.user_agent != user_agent:
             risk_score += 25
             reasons.append("User-Agent changed")
 
+        # Cihaz değişimi kontrolü - risk flag olarak açık ve okunur
         if last_ok.device_info and device_info and last_ok.device_info != device_info:
             risk_score += 25
             reasons.append("Device changed")
+            device_changed = True
 
         if last_ok.location and location and last_ok.location != location:
             risk_score += 20
@@ -187,7 +198,7 @@ def compute_risk_from_last_success(
 
     level = risk_level_from_score(risk_score)
     risk_reasons = "; ".join(reasons) if reasons else None
-    return risk_score, level, (risk_reasons or "No notable risk signals")
+    return risk_score, level, (risk_reasons or "No notable risk signals"), ip_changed, device_changed
 
 
 # -----------------------------
@@ -236,6 +247,12 @@ def login():
     device_info = (body.get("device_info") or "").strip() or user_agent
     location = (body.get("location") or "").strip()
 
+    # RiskDataPacket oluştur - her login denemesinde kesin olarak oluşturulur
+    # Bu paket gelecekte Risk Engine'e aktarılacak veriyi temsil eder
+    risk_packet = RiskDataPacket.from_request(user_id=None, location=location or None)
+    risk_packet.ip_address = ip  # IP'yi doğru şekilde ayarla
+    risk_packet.device_info = device_info  # Device info'yu doğru şekilde ayarla
+
     generic_fail = err(
         "INVALID_CREDENTIALS",
         "Kullanıcı adı veya şifre hatalı.",
@@ -274,7 +291,11 @@ def login():
         user.failed_login_attempts = int(user.failed_login_attempts or 0) + 1
         fails = int(user.failed_login_attempts or 0)
 
-        # default attempt fields for wrong password
+        # RiskDataPacket'i güncelle - user_id'yi ekle
+        risk_packet.user_id = user.id
+
+        # Login attempt kaydı - gelecekte risk analizi için kullanılacak
+        # Her login denemesi (başarılı/başarısız) kaydedilir ve risk analizi için veri sağlar
         attempt = LoginAttempt(
             user_id=user.id,
             ip_address=ip,
@@ -320,6 +341,9 @@ def login():
     user.failed_login_attempts = 0
     user.locked_until = None
 
+    # RiskDataPacket'i güncelle - user_id'yi ekle
+    risk_packet.user_id = user.id
+
     # IMPORTANT: defaults (always defined)
     risk_score = 0.0
     risk_level = "safe"
@@ -327,9 +351,12 @@ def login():
     alert_type = "none"
     message_key = "auth.safe"
     risk_reasons = None
+    ip_changed = False
+    device_changed = False
 
     # compute risk BEFORE creating attempt
-    risk_score, risk_level, risk_reasons = compute_risk_from_last_success(
+    # IP değişimi ve cihaz değişimi bilgisi risk flag olarak döndürülür
+    risk_score, risk_level, risk_reasons, ip_changed, device_changed = compute_risk_from_last_success(
         user=user,
         ip=ip,
         user_agent=user_agent,
@@ -339,7 +366,8 @@ def login():
     ui_state = UI_STATE_BY_RISK[risk_level]
     alert_type, message_key = ALERT_BY_RISK[risk_level]
 
-    # persist successful attempt
+    # Login attempt kaydı - gelecekte risk analizi için kullanılacak
+    # Her login denemesi (başarılı/başarısız) kaydedilir ve risk analizi için veri sağlar
     attempt = LoginAttempt(
         user_id=user.id,
         ip_address=ip,
@@ -353,8 +381,10 @@ def login():
     )
     db.session.add(attempt)
 
-    # update user baseline
+    # update user baseline - IP ve cihaz bilgisini güncelle
     user.last_login_at = utcnow()
+    user.last_ip = ip
+    user.last_device_info = device_info
 
     # CRITICAL: decoy -> no tokens
     if risk_level == "critical":
@@ -366,6 +396,9 @@ def login():
                 "ui_state": ui_state,
                 "alert_type": alert_type,
                 "message_key": message_key,
+                # IP değişimi ve cihaz değişimi bilgisi risk flag olarak açık ve okunur
+                "ip_changed": ip_changed,
+                "device_changed": device_changed,
             },
             200,
         )
@@ -382,6 +415,9 @@ def login():
             "ui_state": ui_state,
             "alert_type": alert_type,
             "message_key": message_key,
+            # IP değişimi ve cihaz değişimi bilgisi risk flag olarak açık ve okunur
+            "ip_changed": ip_changed,
+            "device_changed": device_changed,
         },
         200,
     )
