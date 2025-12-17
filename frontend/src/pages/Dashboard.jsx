@@ -1,51 +1,97 @@
 import { useEffect, useState } from 'react';
 import Sidebar from '../components/Sidebar';
 import RiskIndicator from '../components/RiskIndicator';
+import Toast from '../components/Alert/Toast'; // new alert component
 import api from '../services/api';
 
 const Dashboard = () => {
-  // Başlangıç durumu: Yükleniyor...
-  const [riskData, setRiskData] = useState({ score: 0, level: 'LOADING...' });
+  const [riskData, setRiskData] = useState({ score: 0, level: 'LOADING' });
+  const [alerts, setAlerts] = useState([]); // warning list
 
+  //alert functions
+  const addAlert = (message, type) => {
+    const id = Date.now();
+    setAlerts(prev => [...prev, { id, message, type }]);
+  };
+
+  const removeAlert = (id) => {
+    setAlerts(prev => prev.filter(alert => alert.id !== id));
+  };
+
+  // risk data fetch
   useEffect(() => {
     const fetchRiskStatus = async () => {
       try {
-        // 1. Backend'e gerçek istek atıyoruz
         const response = await api.get('/risk/status');
-        setRiskData(response.data);
+        updateRiskState(response.data);
       } catch (error) {
-        console.warn("Backend kapalı, Mock Data kullanılıyor.");
-        
-        // 2. HATA OLURSA (Backend kapalıysa) SAHTE VERİ GÖSTER
-        // Böylece proje sunumunda ekran boş kalmaz.
-        setTimeout(() => {
-          setRiskData({ score: 25, level: 'SAFE' });
-        }, 500); // Yarım saniye gecikme ekledik ki gerçekçi olsun
+        // Backend is unreachable, set default safe state
+        updateRiskState({ score: 20, level: 'SAFE' });
       }
     };
-
     fetchRiskStatus();
   }, []);
 
+  //adaptive UI based on risk state
+  const updateRiskState = (data) => {
+    setRiskData(data);
+
+    // if risk level changes, show alerts
+    if (data.level === 'SUSPICIOUS') {
+      addAlert("Unusual activity detected! Please verify your identity.", "warning");
+    } else if (data.level === 'CRITICAL') {
+      addAlert("CRITICAL THREAT! System is locking down.", "error");
+    }
+  };
+
+  // test function to simulate risk level changes
+  const simulateRisk = (newScore, newLevel) => {
+    updateRiskState({ score: newScore, level: newLevel });
+  };
+
   return (
-    <div className="dashboard-layout">
-      {/* Sol Menü */}
+    // risk level changes border color
+    <div className={`dashboard-layout border-${riskData.level.toLowerCase()}`}>
+      
+      {/* alert container */}
+      <div className="toast-container">
+        {alerts.map(alert => (
+          <Toast key={alert.id} {...alert} onClose={() => removeAlert(alert.id)} />
+        ))}
+      </div>
+
+      {/* emergency lock overlay */}
+      {riskData.level === 'CRITICAL' && (
+        <div className="critical-overlay">
+          <h1>🚫 SYSTEM LOCKED</h1>
+          <p>Security breach detected. Access suspended.</p>
+          <div style={{fontSize: '50px', marginTop:'20px'}}>🔒</div>
+          
+          {/* unlock button for testing */}
+          <button className="unlock-btn" onClick={() => simulateRisk(20, 'SAFE')}>
+            Admin Unlock (Test)
+          </button>
+        </div>
+      )}
+
       <Sidebar />
 
-      {/* Ana İçerik */}
       <div className="main-content">
-        <h1>Welcome Back, User</h1>
-        <p>Here is your real-time security overview.</p>
+        <h1>Adaptive Security Dashboard</h1>
         
-        <div style={{ marginTop: '30px' }}>
-          {/* Risk Bileşeni */}
-          <RiskIndicator score={riskData.score} level={riskData.level} />
+        {/* test buttons */}
+        <div style={{ background: '#eee', padding: '10px', borderRadius: '8px', marginBottom: '20px' }}>
+          <small>🛠️ <strong>Developer Tools (Test Risk Levels):</strong></small><br/>
+          <button onClick={() => simulateRisk(20, 'SAFE')} style={{width:'auto', marginRight:'5px', background:'green'}}>Safe</button>
+          <button onClick={() => simulateRisk(55, 'SUSPICIOUS')} style={{width:'auto', marginRight:'5px', background:'orange'}}>Suspicious</button>
+          <button onClick={() => simulateRisk(95, 'CRITICAL')} style={{width:'auto', background:'red'}}>Critical</button>
         </div>
 
-        {/* Boş içerik kutuları (Görsellik için) */}
+        <RiskIndicator score={riskData.score} level={riskData.level} />
+
         <div style={{ marginTop: '30px', padding: '20px', background: 'white', borderRadius: '8px' }}>
-          <h3>Recent Login Activity</h3>
-          <p style={{color: '#777'}}>No recent anomalies detected in your account.</p>
+          <h3>System Status</h3>
+          <p>The UI adapts automatically based on the risk score above.</p>
         </div>
       </div>
     </div>
