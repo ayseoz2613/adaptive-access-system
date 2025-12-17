@@ -1,8 +1,8 @@
 # Emir Branch - Özellikler ve Kullanım Kılavuzu
 
 ## 📋 İçindekiler
-1. [Week 1-2: Tamamlanan Özellikler](#week-1-2-tamamlanan-özellikler)
-2. [Week 3: Yapılacaklar](#week-3-yapılacaklar)
+1. [Week 1-2](#week-1-2-tamamlanan-özellikler)
+2. [Week 3](#week-3-yapılacaklar)
 3. [Oluşturulan/Düzenlenen Dosyalar](#oluşturulandüzenlenen-dosyalar)
 4. [Programı Çalıştırma](#programı-çalıştırma)
 5. [Test Senaryoları](#test-senaryoları)
@@ -12,7 +12,7 @@
 ---
 
 <details>
-<summary><h2>📅 Week 1-2: Tamamlanan Özellikler</h2></summary>
+<summary><h2>📅 Week 1-2</h2></summary>
 
 ### 1. Progressive Lock (İlerlemeli Kilitleme) Mekanizması
 - **3 hatalı giriş** → 30 saniye bekleme süresi (429 Too Many Attempts)
@@ -74,7 +74,7 @@
 ---
 
 <details>
-<summary><h2>✅ Week 3: Tamamlanan Özellikler</h2></summary>
+<summary><h2>✅ Week 3</h2></summary>
 
 ### 1. Risk Flag'lerin Netleştirilmesi ✅
 - ✅ Login response'da IP değişimi ve cihaz değişimi bilgisinin risk flag olarak açık ve okunur şekilde tutulması
