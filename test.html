@@ -177,12 +177,13 @@
         <div class="section">
             <h2>🔍 Risk Analizi Testi</h2>
             <p style="font-size: 12px; color: #666; margin-bottom: 10px;">
-                Farklı User-Agent ile giriş yaparak IP/cihaz değişimi flag'lerini test edin
+                Farklı User-Agent ile giriş yaparak risk sınıflandırmasını test edin<br>
+                IP/cihaz değişimi → SUSPICIOUS → MFA zorunlu
             </p>
             <input type="email" id="riskTestEmail" placeholder="Email">
             <input type="password" id="riskTestPassword" placeholder="Şifre">
             <input type="text" id="riskTestUserAgent" placeholder="User-Agent (örn: DifferentBrowser/2.0)">
-            <button onclick="testRiskFlags()">Risk Flag'lerini Test Et</button>
+            <button onclick="testRiskFlags()">Risk Sınıflandırmasını Test Et</button>
             <div id="riskTestResult"></div>
         </div>
     </div>
@@ -294,12 +295,30 @@
                     showResult('loginResult', message, 'success');
                 } else {
                     let message = `❌ Hata (${response.status}):\n${JSON.stringify(data, null, 2)}`;
-                    if (data.error && data.error.details) {
+                    
+                    // MFA_REQUIRED durumunu özel olarak göster
+                    if (data.error && data.error.code === "MFA_REQUIRED") {
+                        message = `🔐 MFA Gerekli (Risk Sınıflandırması)\n\n`;
+                        message += `Risk Seviyesi: SUSPICIOUS\n`;
+                        message += `Sebep: IP veya cihaz değişimi tespit edildi\n\n`;
+                        if (data.error.details) {
+                            message += `📊 Risk Detayları:\n`;
+                            message += `  Risk Level: ${data.error.details.risk_level || 'N/A'}\n`;
+                            message += `  Risk Score: ${data.error.details.risk_score || 0}\n`;
+                            message += `  IP Değişti: ${data.error.details.ip_changed ? '✅ Evet' : '❌ Hayır'}\n`;
+                            message += `  Cihaz Değişti: ${data.error.details.device_changed ? '✅ Evet' : '❌ Hayır'}\n\n`;
+                        }
+                        message += `⚠️ Şüpheli aktivite tespit edildiği için MFA gereklidir.\n`;
+                        message += `\nTam Response:\n${JSON.stringify(data, null, 2)}`;
+                        showResult('loginResult', message, 'error');
+                    } else if (data.error && data.error.details) {
                         if (data.error.details.remaining_seconds) {
                             message += `\n\n⏱️ Kalan süre: ${data.error.details.remaining_seconds} saniye`;
                         }
+                        showResult('loginResult', message, 'error');
+                    } else {
+                        showResult('loginResult', message, 'error');
                     }
-                    showResult('loginResult', message, 'error');
                 }
             } catch (error) {
                 showResult('loginResult', `❌ Bağlantı hatası: ${error.message}`, 'error');
@@ -398,11 +417,20 @@
                     message += `  Risk Seviyesi: ${loginData.risk_level || 'N/A'}\n`;
                     message += `  Risk Skoru: ${loginData.risk_score || 0}\n`;
                     message += `  UI Durumu: ${loginData.ui_state || 'N/A'}\n`;
-                    message += `  Alert Tipi: ${loginData.alert_type || 'N/A'}\n\n`;
+                    message += `  Alert Tipi: ${loginData.alert_type || 'N/A'}\n`;
+                    message += `  MFA Gerekli: ${loginData.require_mfa ? '✅ Evet' : '❌ Hayır'}\n\n`;
                     
                     message += `🚩 Risk Flag'leri:\n`;
                     message += `  IP Değişti: ${loginData.ip_changed === true ? '✅ EVET' : '❌ HAYIR'}\n`;
                     message += `  Cihaz Değişti: ${loginData.device_changed === true ? '✅ EVET' : '❌ HAYIR'}\n\n`;
+                    
+                    // Risk sınıflandırması açıklaması
+                    if (loginData.risk_level === 'suspicious') {
+                        message += `⚠️ SUSPICIOUS tespit edildi → MFA zorunlu olmalıydı\n`;
+                        message += `(Bu test başarılı giriş olduğu için token verildi, normalde MFA gerekir)\n\n`;
+                    } else {
+                        message += `✅ SAFE tespit edildi → Normal giriş\n\n`;
+                    }
                     
                     if (loginData.risk_reasons) {
                         message += `📝 Risk Nedenleri:\n  ${loginData.risk_reasons}\n\n`;
@@ -415,7 +443,26 @@
                     
                     showResult('riskTestResult', message, 'success');
                 } else {
-                    showResult('riskTestResult', `❌ Hata (${response.status}):\n${JSON.stringify(data, null, 2)}`, 'error');
+                    // MFA_REQUIRED durumunu özel göster
+                    if (data.error && data.error.code === "MFA_REQUIRED") {
+                        let message = `🔐 MFA Gerekli (Risk Sınıflandırması)\n\n`;
+                        message += `✅ Risk Sınıflandırması Çalışıyor!\n\n`;
+                        message += `Risk Seviyesi: SUSPICIOUS\n`;
+                        message += `Sebep: IP veya cihaz değişimi tespit edildi\n\n`;
+                        if (data.error.details) {
+                            message += `📊 Risk Detayları:\n`;
+                            message += `  Risk Level: ${data.error.details.risk_level || 'N/A'}\n`;
+                            message += `  Risk Score: ${data.error.details.risk_score || 0}\n`;
+                            message += `  IP Değişti: ${data.error.details.ip_changed ? '✅ Evet' : '❌ Hayır'}\n`;
+                            message += `  Cihaz Değişti: ${data.error.details.device_changed ? '✅ Evet' : '❌ Hayır'}\n\n`;
+                        }
+                        message += `⚠️ Şüpheli aktivite tespit edildiği için MFA gereklidir.\n`;
+                        message += `Sistem doğru şekilde SUSPICIOUS durumunu tespit etti ve MFA zorunlu hale getirdi.\n\n`;
+                        message += `\n📄 Tam Response:\n${JSON.stringify(data, null, 2)}`;
+                        showResult('riskTestResult', message, 'error');
+                    } else {
+                        showResult('riskTestResult', `❌ Hata (${response.status}):\n${JSON.stringify(data, null, 2)}`, 'error');
+                    }
                 }
             } catch (error) {
                 showResult('riskTestResult', `❌ Bağlantı hatası: ${error.message}`, 'error');

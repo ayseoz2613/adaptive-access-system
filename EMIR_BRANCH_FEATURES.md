@@ -1,18 +1,19 @@
 # Emir Branch - Özellikler ve Kullanım Kılavuzu
 
 ## 📋 İçindekiler
-1. [Week 1-2](#week-1-2-tamamlanan-özellikler)
-2. [Week 3](#week-3-yapılacaklar)
-3. [Oluşturulan/Düzenlenen Dosyalar](#oluşturulandüzenlenen-dosyalar)
-4. [Programı Çalıştırma](#programı-çalıştırma)
-5. [Test Senaryoları](#test-senaryoları)
-6. [API Endpoint'leri](#api-endpointleri)
-7. [Dosya İçerikleri](#dosya-içerikleri)
+1. [Week 1-2](#week-1-2)
+2. [Week 3](#week-3)
+3. [Week 4](#week-4)
+4. [Oluşturulan/Düzenlenen Dosyalar](#oluşturulandüzenlenen-dosyalar)
+5. [Programı Çalıştırma](#programı-çalıştırma)
+6. [Test Senaryoları](#test-senaryoları)
+7. [API Endpoint'leri](#api-endpointleri)
+8. [Dosya İçerikleri](#dosya-içerikleri)
+9. [Sistem Analizi](#sistem-analizi)
 
 ---
 
-<details>
-<summary><h2>📅 Week 1-2</h2></summary>
+## 📅 Week 1-2
 
 ### 1. Progressive Lock (İlerlemeli Kilitleme) Mekanizması
 - **3 hatalı giriş** → 30 saniye bekleme süresi (429 Too Many Attempts)
@@ -31,7 +32,6 @@
 
 ### 3. RiskDataPacket Yapısı
 - IP adresi, cihaz bilgisi, giriş zamanı, konum bilgisi içerir
-- Week 3'te Risk Engine'e aktarılacak veriyi temsil eder
 - Flask request'ten otomatik oluşturulur
 - Dictionary formatına dönüştürülebilir
 - Her login denemesinde oluşturulur
@@ -69,41 +69,38 @@
 ✅ **SQLite/PostgreSQL** - Esnek veritabanı desteği
 ✅ **Login Attempt History** - Giriş geçmişi kayıtları
 
-</details>
-
 ---
 
-<details>
-<summary><h2>✅ Week 3</h2></summary>
+## ✅ Week 3
 
-### 1. Risk Flag'lerin Netleştirilmesi ✅
-- ✅ Login response'da IP değişimi ve cihaz değişimi bilgisinin risk flag olarak açık ve okunur şekilde tutulması
-- ✅ `ip_changed` ve `device_changed` flag'lerinin response'a eklenmesi
-- ✅ Backend iç akışında bu bilgilerin risk flag olarak netleştirilmesi
-- ✅ `compute_risk_from_last_success` fonksiyonu artık `ip_changed` ve `device_changed` boolean flag'lerini döndürüyor
-- ✅ Login response'da risk flag'leri açık şekilde görünüyor: `{"ip_changed": true/false, "device_changed": true/false}`
+### 1. Risk Flag'lerin Netleştirilmesi
+- Login response'da IP değişimi ve cihaz değişimi bilgisinin risk flag olarak açık ve okunur şekilde tutulması
+- `ip_changed` ve `device_changed` flag'lerinin response'a eklenmesi
+- Backend iç akışında bu bilgilerin risk flag olarak netleştirilmesi
+- `compute_risk_from_last_success` fonksiyonu artık `ip_changed` ve `device_changed` boolean flag'lerini döndürüyor
+- Login response'da risk flag'leri açık şekilde görünüyor: `{"ip_changed": true/false, "device_changed": true/false}`
 
-### 2. RiskDataPacket Kullanımının Doğrulanması ✅
-- ✅ RiskDataPacket'in her login denemesinde (başarılı/başarısız) kesin olarak oluşturulduğunun doğrulanması
-- ✅ RiskDataPacket'in kullanılabilir olduğunun garantilenmesi
-- ✅ Açıklayıcı yorum satırları eklendi: "Her login denemesinde kesin olarak oluşturulur ve kullanılabilir"
-- ✅ RiskDataPacket'in `user_id`'si login akışında güncelleniyor
+### 2. RiskDataPacket Kullanımının Doğrulanması
+- RiskDataPacket'in her login denemesinde (başarılı/başarısız) kesin olarak oluşturulduğunun doğrulanması
+- RiskDataPacket'in kullanılabilir olduğunun garantilenmesi
+- Açıklayıcı yorum satırları eklendi: "Her login denemesinde kesin olarak oluşturulur ve kullanılabilir"
+- RiskDataPacket'in `user_id`'si login akışında güncelleniyor
 
-### 3. Login Attempt Kayıtlarına Açıklayıcı Yorumlar ✅
-- ✅ Login attempt kayıtlarının gelecekte risk analizi için kullanılacağını açıklayan yorumlar eklendi
-- ✅ Her login denemesinin (başarılı/başarısız) neden kaydedildiğinin açıklanması
-- ✅ `LoginAttempt` modeline detaylı docstring eklendi
-- ✅ Her alanın risk analizindeki rolü açıklandı (IP değişimi, cihaz değişimi, konum, zaman analizi için)
+### 3. Login Attempt Kayıtlarına Açıklayıcı Yorumlar
+- Login attempt kayıtlarının gelecekte risk analizi için kullanılacağını açıklayan yorumlar eklendi
+- Her login denemesinin (başarılı/başarısız) neden kaydedildiğinin açıklanması
+- `LoginAttempt` modeline detaylı docstring eklendi
+- Her alanın risk analizindeki rolü açıklandı (IP değişimi, cihaz değişimi, konum, zaman analizi için)
 
-### 4. Test Arayüzü Güncellemeleri ✅
-- ✅ `test.html` dosyası güncellendi - yeni risk flag'leri gösteriliyor
-- ✅ Risk analizi bilgileri (risk_level, risk_score, risk_reasons) görüntüleniyor
-- ✅ Yeni "Risk Analizi Testi" bölümü eklendi - farklı User-Agent ile test yapılabiliyor
-- ✅ Response formatı güncellendi (`{ok: true, data: {...}}` formatına uyumlu)
+### 4. Test Arayüzü Güncellemeleri
+- `test.html` dosyası güncellendi - yeni risk flag'leri gösteriliyor
+- Risk analizi bilgileri (risk_level, risk_score, risk_reasons) görüntüleniyor
+- Yeni "Risk Analizi Testi" bölümü eklendi - farklı User-Agent ile test yapılabiliyor
+- Response formatı güncellendi (`{ok: true, data: {...}}` formatına uyumlu)
 
-### 5. Kod Temizliği ✅
-- ✅ Gereksiz test scripti (`test_new_features.sh`) silindi
-- ✅ Tüm değişiklikler küçük, açıklayıcı ve sade dokunuşlar olarak yapıldı
+### 5. Kod Temizliği
+- Gereksiz test scripti (`test_new_features.sh`) silindi
+- Tüm değişiklikler küçük, açıklayıcı ve sade dokunuşlar olarak yapıldı
 
 ### Sprint Hedefleri
 - ✅ Risk-related login metadata validated and stabilized
@@ -117,7 +114,79 @@
 - ✅ Mevcut çalışan kod bozulmadı
 - ✅ Küçük, açıklayıcı, sade dokunuşlar yapıldı
 
-</details>
+---
+
+## ✅ Week 4
+
+### 1. Basit Risk Sınıflandırması
+- `classify_risk_simple()` fonksiyonu eklendi
+- Sadece IP ve cihaz değişimine bakarak risk seviyesi belirleniyor
+- `ip_changed` veya `device_changed` true ise → `risk_level = "suspicious"`
+- Aksi halde → `risk_level = "safe"`
+- Basit tutulmasının nedeni açıklandı (Week 5'te genişletilecek)
+
+### 2. Risk Level'in Authentication Akışında Kullanımı
+- Risk level bilgisi login response'a eklendi
+- Authentication decision için kullanılabilir hale getirildi
+- `classify_risk_simple()` fonksiyonu authentication akışında kullanılıyor
+- Risk level response'da açık şekilde görünüyor
+
+### 3. Risk Sonucuna Göre Sistem Davranışı
+- **SAFE** → Normal login (token verilir)
+- **SUSPICIOUS** → MFA zorunlu (401 MFA_REQUIRED hatası döner)
+- SUSPICIOUS durumunda `require_mfa = True` olarak ayarlanıyor
+- User modelindeki `require_mfa` alanı risk seviyesine göre güncelleniyor
+- Mevcut MFA yapısı kullanılıyor
+
+### 4. Kod Yapısı
+- Basit ve sade kod yapısı
+- Yeni kompleks scoring eklenmedi
+- GeoIP, zaman analizi veya ağırlıklı puanlama eklenmedi
+- Mevcut dosyalar içinde küçük fonksiyonlar eklendi (`classify_risk_simple`)
+- Mevcut `compute_risk_from_last_success` fonksiyonu korundu
+
+### 5. Dokümantasyon ve Yorumlar
+- Risk sınıflandırmasının neden basit tutulduğu açıklandı
+- Week 5'te genişletileceği not edildi
+- Fonksiyon docstring'leri eklendi
+- Kod içinde açıklayıcı yorumlar eklendi
+
+### Sprint Backlog - Tamamlanma Durumu
+- ✅ **Introduce basic risk classification logic (safe vs suspicious)** - `classify_risk_simple()` fonksiyonu eklendi
+- ✅ **Connect risk outcomes with authentication decisions** - Risk level'e göre MFA zorunlu hale getirildi
+- ✅ **Ensure consistent propagation of risk states through the system** - Risk state'leri tüm akışta tutarlı şekilde yayılıyor
+- ✅ **Validate system behavior under different login scenarios** - Farklı login senaryoları test edildi
+- ✅ **Prepare structure for more advanced risk scoring in the final sprint** - Week 5 için yapı hazırlandı
+
+### Sprint Hedefleri
+- ✅ Basit risk sınıflandırma mantığı eklendi
+- ✅ Risk level authentication akışında kullanılabilir hale getirildi
+- ✅ Risk sonucuna göre sistem davranışı netleştirildi
+- ✅ Kodlar sade ve okunabilir tutuldu
+- ✅ Risk evaluation results consistently propagated through backend flow
+- ✅ Multiple login scenarios tested and validated
+
+### Increment Log (Release Notes)
+- ✅ Basic risk classification logic introduced
+- ✅ Risk evaluation connected with authentication flow
+- ✅ System reactions adjusted based on evaluated risk
+- ✅ Multiple risk scenarios tested and validated
+- ✅ Infrastructure prepared for final risk scoring improvements
+
+### Test Arayüzü Güncellemeleri
+- ✅ `test.html` güncellendi - MFA_REQUIRED durumu özel olarak gösteriliyor
+- ✅ Risk sınıflandırması test bölümü güncellendi
+- ✅ SUSPICIOUS durumunda MFA zorunlu mesajı eklendi
+- ✅ Risk flag'leri ve risk level bilgileri görüntüleniyor
+
+### Notlar
+- ⚠️ Kompleks risk scoring EKLEMEDİK (sadece basit sınıflandırma)
+- ⚠️ GeoIP veya zaman analizi EKLEMEDİK
+- ⚠️ Ağırlıklı puanlama EKLEMEDİK
+- ✅ Mevcut çalışan kod bozulmadı
+- ✅ Basit, sade ve okunabilir kod yapısı korundu
+- ✅ Logic simple and interpretable - sistem maintainable
+- 📝 Week 5'te daha gelişmiş risk scoring eklenecek
 
 ---
 
@@ -143,6 +212,9 @@
    - RiskDataPacket oluşturma eklendi (her login denemesinde)
    - IP ve cihaz değişimi risk flag'leri eklendi (`ip_changed`, `device_changed`)
    - Login attempt kayıtlarına açıklayıcı yorumlar eklendi
+   - Basit risk sınıflandırması eklendi (`classify_risk_simple`)
+   - SUSPICIOUS durumunda MFA zorunlu hale getirildi
+   - Risk level'e göre authentication decision yapılıyor
    - Standart error handling kullanılıyor
 
 3. **`app/__init__.py`** - Root path endpoint eklendi
@@ -246,27 +318,27 @@ curl -X POST http://localhost:5001/api/auth/login \
 ```
 **Beklenen:** `423 Locked` - `{"error": "Account temporarily locked", "remaining_seconds": 86400}`
 
-#### 6. MFA Tetikleme Testi
+#### 6. Risk Sınıflandırması Testi (SUSPICIOUS → MFA)
 ```bash
-# İlk giriş (normal - MFA gerekmez)
+# İlk giriş (normal - SAFE)
 curl -X POST http://localhost:5001/api/auth/login \
   -H "Content-Type: application/json" \
   -d '{"email":"test@example.com","password":"test12345"}'
 
-# Farklı User-Agent ile giriş (MFA gerektirir)
+# Farklı User-Agent ile giriş (SUSPICIOUS → MFA gerektirir)
 curl -X POST http://localhost:5001/api/auth/login \
   -H "Content-Type: application/json" \
   -H "User-Agent: DifferentBrowser/1.0" \
   -d '{"email":"test@example.com","password":"test12345"}'
 ```
-**Beklenen:** `401 Unauthorized` - `{"error": "Invalid credentials", "message": "Multi-factor authentication required", "require_mfa": true}`
+**Beklenen:** `401 MFA_REQUIRED` - `{"error": "MFA_REQUIRED", "message": "Multi-factor authentication required due to suspicious activity.", "require_mfa": true}`
 
 #### 7. Kullanıcı Bilgilerini Görüntüleme
 ```bash
 # Önce login yapıp token alın
 TOKEN=$(curl -s -X POST http://localhost:5001/api/auth/login \
   -H "Content-Type: application/json" \
-  -d '{"email":"test@example.com","password":"test12345"}' | jq -r '.access_token')
+  -d '{"email":"test@example.com","password":"test12345"}' | jq -r '.data.access_token')
 
 # Token ile kullanıcı bilgilerini al
 curl -X GET http://localhost:5001/api/auth/me \
@@ -342,13 +414,14 @@ http://localhost:5001
       "alert_type": "none",
       "message_key": "auth.safe",
       "ip_changed": false,
-      "device_changed": false
+      "device_changed": false,
+      "require_mfa": false
     }
   }
   ```
 - **Errors:**
   - `400` - Email/şifre eksik
-  - `401` - Geçersiz kimlik bilgileri veya MFA gerekli
+  - `401` - Geçersiz kimlik bilgileri veya MFA gerekli (MFA_REQUIRED)
   - `423` - Hesap kilitli
   - `429` - Çok fazla deneme
 
@@ -358,12 +431,16 @@ http://localhost:5001
 - **Response:** `200 OK`
   ```json
   {
-    "id": 1,
-    "email": "user@example.com",
-    "created_at": "2025-12-03T...",
-    "trust_score": 0.0,
-    "last_login_at": "2025-12-03T...",
-    "require_mfa": false
+    "ok": true,
+    "data": {
+      "id": 1,
+      "email": "user@example.com",
+      "created_at": "2025-12-03T...",
+      "is_active": true,
+      "is_locked": false,
+      "locked_until": null,
+      "token_version": 0
+    }
   }
   ```
 - **Errors:**
@@ -371,7 +448,7 @@ http://localhost:5001
 
 ---
 
-## 📄 Dosya Açıklamaları
+## 📄 Dosya İçerikleri
 
 ### Yeni Dosyalar
 
@@ -384,7 +461,7 @@ http://localhost:5001
 - IP adresi, cihaz bilgisi, giriş zamanı, konum bilgisi içerir
 - Flask request'ten otomatik oluşturulur
 - Her login denemesinde (başarılı/başarısız) kesin olarak oluşturulur ve kullanılabilir
-- Week 3'te Risk Engine'e aktarılacak veriyi temsil eder
+- Risk Engine'e aktarılacak veriyi temsil eder
 - Açıklayıcı yorumlar eklendi
 
 **app/error_handlers.py** - Standart error response formatı:
@@ -418,45 +495,6 @@ http://localhost:5001
 
 ---
 
-## ✅ Main Branch ile Merge Uyumluluğu
-
-### Değişiklik Özeti
-- **Yeni Dosyalar (5):** Çakışma riski yok
-  - `app/error_handlers.py`
-  - `app/lock_utils.py`
-  - `app/mfa_utils.py`
-  - `app/risk_data.py`
-  - `migrations/versions/727e20610b00_add_progressive_lock_and_mfa_fields.py`
-
-- **Düzenlenen Dosyalar (4):** Sadece genişletme, çakışma riski düşük
-  - `app/__init__.py` - Sadece root endpoint eklendi
-  - `app/auth_routes.py` - Login fonksiyonu genişletildi
-  - `app/models.py` - User modeline yeni alanlar eklendi
-  - `run.py` - Port yapılandırması eklendi
-
-### Merge Güvenliği
-✅ **Çakışma riski çok düşük** çünkü:
-- Yeni dosyalar eklendi (çakışma yok)
-- Mevcut dosyalar sadece genişletildi (yeni kod eklendi, mevcut kod değiştirilmedi)
-- Migration dosyası doğru şekilde oluşturuldu (`down_revision` mevcut)
-- `.gitignore` eklendi (venv ve .env ignore ediliyor)
-
-### Merge Komutları
-```bash
-# Main branch'e geç
-git checkout main
-
-# Emir branch'ini merge et
-git merge emir
-
-# Eğer çakışma olursa (olması beklenmiyor)
-# Çakışmaları çöz ve commit yap
-git add .
-git commit -m "Merge emir branch: Add progressive lock and MFA features"
-```
-
----
-
 ## 🎨 Görsel Test Arayüzü
 
 ### Test Sayfası Kullanımı
@@ -481,7 +519,8 @@ python run.py
    - ✅ **Giriş Yap:** Başarılı giriş test edin (risk flag'leri görüntülenir)
    - ✅ **Kullanıcı Bilgileri:** Token ile bilgileri görüntüleyin
    - ✅ **Progressive Lock:** Hatalı giriş denemeleri yapın (3, 5, 7 kez)
-   - ✅ **Risk Analizi Testi:** Farklı User-Agent ile giriş yaparak IP/cihaz değişimi flag'lerini test edin
+   - ✅ **Risk Analizi Testi:** Farklı User-Agent ile giriş yaparak risk sınıflandırmasını test edin
+   - ✅ **MFA Zorunluluğu Testi:** SUSPICIOUS durumunda MFA_REQUIRED hatasını test edin
 
 ### Test Sayfası Özellikleri
 - 🎨 Modern ve kullanıcı dostu arayüz
@@ -493,6 +532,8 @@ python run.py
 - 🚩 Risk flag'leri görüntüleme (ip_changed, device_changed)
 - 📈 Risk analizi bilgileri (risk_level, risk_score, risk_reasons)
 - 🔍 Risk Analizi Testi bölümü - farklı User-Agent ile test
+- 🔐 MFA_REQUIRED durumu özel gösterimi
+- ⚠️ SUSPICIOUS durumunda MFA zorunlu mesajı
 
 ---
 
@@ -515,12 +556,107 @@ python run.py
 
 ---
 
-## 🎓 Öğrenme Notları
+## 🧪 test.html ile Sistem Testi
 
-- Progressive lock mekanizması basit ve etkili bir brute-force koruması sağlar
-- MFA tetikleme, şüpheli girişleri tespit eder
-- RiskDataPacket yapısı, gelecekteki risk analizi için hazır
-- Standart error handling, frontend entegrasyonunu kolaylaştırır
-- Week 3'te risk flag'leri netleştirildi ve sistem Risk Engine entegrasyonu için hazırlandı
-- IP ve cihaz değişimi flag'leri açık ve okunur şekilde response'da görünüyor
-- Login attempt kayıtları risk analizi için tutarlı ve eksiksiz şekilde kaydediliyor
+### Adım 1: Uygulamayı Başlatın
+```bash
+python run.py
+```
+
+### Adım 2: test.html'i Açın
+Tarayıcınızda `test.html` dosyasını açın:
+- macOS: `open test.html`
+- Windows: `start test.html`
+- Veya dosyaya çift tıklayın
+
+### Adım 3: Test Senaryoları
+
+#### Test Senaryosu 1: Normal Giriş (SAFE)
+1. **Kullanıcı Kaydı** bölümünden yeni bir kullanıcı oluşturun
+2. **Giriş Yap** bölümünden aynı bilgilerle giriş yapın
+3. **Beklenen Sonuç:**
+   - ✅ Giriş başarılı
+   - Risk Seviyesi: `safe`
+   - IP Değişti: `❌ Hayır`
+   - Cihaz Değişti: `❌ Hayır`
+   - Token verildi
+
+#### Test Senaryosu 2: Risk Sınıflandırması (SUSPICIOUS → MFA)
+1. **Risk Analizi Testi** bölümüne gidin
+2. Email ve şifre girin
+3. **Farklı bir User-Agent** girin (örn: `DifferentBrowser/2.0`)
+4. "Risk Sınıflandırmasını Test Et" butonuna tıklayın
+5. **Beklenen Sonuç:**
+   - ❌ Hata: `401 MFA_REQUIRED`
+   - Risk Seviyesi: `suspicious`
+   - IP Değişti veya Cihaz Değişti: `✅ Evet`
+   - MFA zorunlu mesajı görünür
+
+#### Test Senaryosu 3: İlk Giriş (SAFE)
+1. Yeni bir kullanıcı oluşturun
+2. İlk girişi yapın
+3. **Beklenen Sonuç:**
+   - ✅ Giriş başarılı
+   - Risk Seviyesi: `safe` (ilk giriş olduğu için)
+   - Token verildi
+
+#### Test Senaryosu 4: Progressive Lock
+1. **Progressive Lock Testi** bölümüne gidin
+2. Email ve yanlış şifre girin
+3. "Hatalı Giriş Dene" butonuna 3 kez tıklayın
+4. **Beklenen Sonuç:**
+   - 3. denemede: `429 Too Many Attempts`
+   - 30 saniye bekleme mesajı
+
+### Özelliklerini Gözlemleme
+
+**test.html'de görebileceğiniz özellikler:**
+
+1. **Risk Sınıflandırması:**
+   - Risk seviyesi (`safe` veya `suspicious`) görüntülenir
+   - IP ve cihaz değişimi flag'leri gösterilir
+
+2. **MFA Zorunluluğu:**
+   - SUSPICIOUS durumunda özel MFA_REQUIRED mesajı
+   - Risk detayları (risk_level, risk_score, ip_changed, device_changed) gösterilir
+
+3. **Sistem Davranışı:**
+   - SAFE → Normal giriş (token verilir)
+   - SUSPICIOUS → MFA zorunlu (401 hatası)
+
+### İpuçları
+- Farklı User-Agent'ler deneyerek cihaz değişimini test edebilirsiniz
+- Aynı kullanıcı ile birden fazla giriş yaparak IP/cihaz değişimini gözlemleyebilirsiniz
+- Risk Analizi Testi bölümü risk özelliklerini test etmek için özel olarak hazırlandı
+
+---
+
+## 🔍 Sistem Analizi
+
+### Sistem Ne Yapıyor?
+
+Bu sistem, **Adaptive Access System** adında bir kimlik doğrulama ve risk tabanlı erişim kontrolü sistemidir. Temel amacı, kullanıcı girişlerini risk seviyesine göre değerlendirip, şüpheli aktiviteleri tespit ederek güvenliği artırmaktır.
+
+**Ana İşlevler:**
+
+1. **Kullanıcı Yönetimi:**
+   - Email ve şifre ile kullanıcı kaydı
+   - JWT token tabanlı kimlik doğrulama
+   - Şifreler bcrypt ile hashleniyor
+
+2. **Güvenlik Mekanizmaları:**
+   - **Progressive Lock:** Brute-force saldırılarına karşı kademeli kilitleme (3→30sn, 5→2dk, 7→24saat)
+   - **Risk Tabanlı MFA:** IP veya cihaz değişiminde MFA zorunlu hale getiriliyor
+   - **Emergency Lock:** Kullanıcı hesabını anında kilitleyebiliyor
+   - **Session Invalidation:** Token version ile tüm oturumları geçersiz kılma
+
+3. **Risk Analizi:**
+   - Her login denemesinde risk değerlendirmesi yapılıyor
+   - IP değişimi, cihaz değişimi gibi sinyaller toplanıyor
+   - Basit risk sınıflandırması: SAFE veya SUSPICIOUS
+   - Risk sonuçlarına göre sistem davranışı değişiyor
+
+4. **Veri Toplama:**
+   - Tüm login denemeleri (başarılı/başarısız) kaydediliyor
+   - Risk skoru, risk seviyesi, risk nedenleri saklanıyor
+   - Gelecekteki risk analizi için veri hazırlanıyor

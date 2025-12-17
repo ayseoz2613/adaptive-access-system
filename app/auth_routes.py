@@ -137,6 +137,30 @@ def ensure_session_valid(user: User, jwt_claims: dict):
 
 
 # -----------------------------
+# Week 4: Simple risk classification
+# Basit risk sınıflandırması - sadece IP ve cihaz değişimine bakarak
+# Week 5'te daha gelişmiş risk scoring eklenecek
+# -----------------------------
+def classify_risk_simple(ip_changed: bool, device_changed: bool) -> str:
+    """
+    Basit risk sınıflandırması (Week 4).
+    
+    Bu basit mantık Week 5'te daha gelişmiş risk scoring ile genişletilecek.
+    Şu an için sadece IP ve cihaz değişimine bakarak risk seviyesi belirleniyor.
+    
+    Args:
+        ip_changed: IP adresi değişti mi?
+        device_changed: Cihaz bilgisi değişti mi?
+        
+    Returns:
+        "safe" veya "suspicious" (lowercase - mevcut risk level formatına uyumlu)
+    """
+    if ip_changed or device_changed:
+        return "suspicious"
+    return "safe"
+
+
+# -----------------------------
 # Risk scoring (Week 3/5)
 # Compare with last successful login attempt
 # -----------------------------
@@ -356,15 +380,26 @@ def login():
 
     # compute risk BEFORE creating attempt
     # IP değişimi ve cihaz değişimi bilgisi risk flag olarak döndürülür
-    risk_score, risk_level, risk_reasons, ip_changed, device_changed = compute_risk_from_last_success(
+    risk_score, risk_level_old, risk_reasons, ip_changed, device_changed = compute_risk_from_last_success(
         user=user,
         ip=ip,
         user_agent=user_agent,
         device_info=device_info,
         location=location,
     )
-    ui_state = UI_STATE_BY_RISK[risk_level]
-    alert_type, message_key = ALERT_BY_RISK[risk_level]
+    
+    # Week 4: Basit risk sınıflandırması kullan
+    # Sadece IP ve cihaz değişimine bakarak risk seviyesi belirleniyor
+    # Bu basit mantık Week 5'te daha gelişmiş risk scoring ile genişletilecek
+    risk_level = classify_risk_simple(ip_changed, device_changed)
+    
+    # Risk seviyesine göre UI state ve alert type belirle
+    ui_state = UI_STATE_BY_RISK.get(risk_level, "normal")
+    alert_type, message_key = ALERT_BY_RISK.get(risk_level, ("none", "auth.safe"))
+    
+    # Week 4: SUSPICIOUS durumunda MFA zorunlu
+    # Basit risk sınıflandırmasına göre MFA gerekip gerekmediğini belirle
+    require_mfa = (risk_level == "suspicious")
 
     # Login attempt kaydı - gelecekte risk analizi için kullanılacak
     # Her login denemesi (başarılı/başarısız) kaydedilir ve risk analizi için veri sağlar
@@ -385,6 +420,24 @@ def login():
     user.last_login_at = utcnow()
     user.last_ip = ip
     user.last_device_info = device_info
+    user.require_mfa = require_mfa  # Week 4: Risk seviyesine göre MFA gereksinimi
+
+    # Week 4: SUSPICIOUS durumunda MFA zorunlu - token verme
+    if risk_level == "suspicious":
+        db.session.commit()
+        return err(
+            "MFA_REQUIRED",
+            "Multi-factor authentication required due to suspicious activity.",
+            401,
+            message_key="auth.mfa_required",
+            details={
+                "require_mfa": True,
+                "risk_level": risk_level,
+                "risk_score": float(risk_score),
+                "ip_changed": ip_changed,
+                "device_changed": device_changed,
+            },
+        )
 
     # CRITICAL: decoy -> no tokens
     if risk_level == "critical":
@@ -403,7 +456,7 @@ def login():
             200,
         )
 
-    # SAFE/SUSPICIOUS: issue tokens
+    # SAFE: issue tokens (SUSPICIOUS durumunda yukarıda MFA gerektirildi)
     tokens = make_tokens(user)
     db.session.commit()
 
@@ -418,6 +471,7 @@ def login():
             # IP değişimi ve cihaz değişimi bilgisi risk flag olarak açık ve okunur
             "ip_changed": ip_changed,
             "device_changed": device_changed,
+            "require_mfa": require_mfa,  # Week 4: Risk seviyesine göre MFA gereksinimi
         },
         200,
     )
