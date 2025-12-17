@@ -45,28 +45,42 @@
 
 ### 5. Temel Özellikler
 ✅ **Kullanıcı Kaydı** - Email ve şifre ile kayıt
+
 ✅ **Kullanıcı Girişi** - JWT token tabanlı authentication
+
 ✅ **Token Doğrulama** - Access token ve refresh token
+
 ✅ **Kullanıcı Bilgileri** - Token ile korumalı endpoint
 
 ### 6. Güvenlik Özellikleri
 ✅ **Progressive Lock** - İlerlemeli hesap kilitleme
+
 ✅ **MFA Tetikleme** - IP/cihaz değişikliği tespiti
+
 ✅ **Şifre Hashleme** - bcrypt ile güvenli şifre saklama
+
 ✅ **Login Attempt Tracking** - Tüm giriş denemeleri kaydedilir
+
 ✅ **Risk Score Tracking** - Risk skoru alanları hazır (ileride kullanılacak)
 
 ### 7. API Özellikleri
 ✅ **RESTful API** - Standart REST endpoint'leri
+
 ✅ **JSON Response** - Tüm response'lar JSON formatında
+
 ✅ **Error Handling** - Standart hata yönetimi
+
 ✅ **Health Check** - Sistem durumu kontrolü
+
 ✅ **Root Endpoint** - API bilgileri ve endpoint listesi
 
 ### 8. Veritabanı Özellikleri
 ✅ **SQLAlchemy ORM** - Veritabanı yönetimi
+
 ✅ **Flask-Migrate** - Database migration desteği
+
 ✅ **SQLite/PostgreSQL** - Esnek veritabanı desteği
+
 ✅ **Login Attempt History** - Giriş geçmişi kayıtları
 
 ---
@@ -230,7 +244,7 @@
 pip install -r requirements.txt
 ```
 
-**Not:** Anaconda Python kullanılıyor, venv gerekmez.
+**Not:** Anaconda Python kullanılıyorsa venv gerekmez.
 
 ### Adım 2: Veritabanı Migration'larını Çalıştırın
 ```bash
