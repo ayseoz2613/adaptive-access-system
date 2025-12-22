@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import Sidebar from '../components/Sidebar';
 import RiskIndicator from '../components/RiskIndicator';
 import Toast from '../components/Alert/Toast'; // new alert component
@@ -7,6 +8,8 @@ import api from '../services/api';
 const Dashboard = () => {
   const [riskData, setRiskData] = useState({ score: 0, level: 'LOADING' });
   const [alerts, setAlerts] = useState([]); // warning list
+
+  const navigate = useNavigate();
 
   //alert functions
   const addAlert = (message, type) => {
@@ -40,7 +43,8 @@ const Dashboard = () => {
     if (data.level === 'SUSPICIOUS') {
       addAlert("Unusual activity detected! Please verify your identity.", "warning");
     } else if (data.level === 'CRITICAL') {
-      addAlert("CRITICAL THREAT! System is locking down.", "error");
+      navigate('/decoy'); // Kilit ekranı yerine sessizce sahte panele atıyoruz
+
     }
   };
 
