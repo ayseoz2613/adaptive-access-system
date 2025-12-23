@@ -1,7 +1,8 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
+import TrustBadge from './TrustBadge'; // Yeni bileşeni ekle
 
-const Sidebar = () => {
+const Sidebar = ({ trustScore = 95 }) => { // Varsayılan puan 95
   const navigate = useNavigate();
 
   const handleLogout = () => {
@@ -12,7 +13,11 @@ const Sidebar = () => {
   return (
     <div className="sidebar">
       <h3>🛡️ Adaptive Access</h3>
-      <ul>
+      
+      {/* Trust Score Göstergesi */}
+      <TrustBadge score={trustScore} />
+      
+      <ul style={{marginTop: '20px'}}>
         <li style={{fontWeight: 'bold', color: '#2c3e50'}}>📊 Dashboard</li>
         <li>⚙️ Settings</li>
         <li>👤 Profile</li>
