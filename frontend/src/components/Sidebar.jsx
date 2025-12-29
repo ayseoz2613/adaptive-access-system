@@ -2,7 +2,7 @@ import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import TrustBadge from './TrustBadge'; // Yeni bileşeni ekle
 
-const Sidebar = ({ trustScore = 95 }) => { // Varsayılan puan 95
+const Sidebar = ({ trustScore = 0 }) => {
   const navigate = useNavigate();
 
   const handleLogout = () => {

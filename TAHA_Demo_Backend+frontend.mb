@@ -1,0 +1,91 @@
+1)Gerekli kurulumlar
+
+Python 3.10+
+
+Node.js 18+ (senin sistemde var)
+
+(Opsiyonel) VS Code
+
+
+
+2) Backend’i çalıştırma (Flask)
+2.1 Sanal ortam kur (önerilir)
+
+Windows PowerShell / CMD:
+
+python -m venv venv
+venv\Scripts\activate
+
+
+
+2.2 Paketleri yükle
+pip install -r requirements.txt
+
+
+2.3 Backend’i başlat
+python run.py
+
+
+Beklenen:
+Terminalde Flask server açılır
+Genelde: http://localhost:5001 (sende hangi port yazıyorsa o)
+Eğer port farklıysa frontend .env’deki backend adresini aynı porta göre ayarla.
+
+
+
+3) Frontend’i çalıştırma (React / Vite)
+
+***Yeni bir terminal aç (backend açık kalsın).
+
+3.1 Frontend klasörüne gir
+cd frontend
+
+3.2 Paketleri yükle
+npm install
+
+3.3 .env kontrolü
+frontend/.env dosyasında backend adresi şu formatta olmalı (örnek):
+VITE_API_URL=http://localhost:5001/api
+Senin axios baseURL’in /api bekliyorsa bu doğru.
+Eğer backend /api kullanmıyorsa http://localhost:5001 şeklinde olur. (Projede hangisi varsa ona göre.)
+
+
+3.4 Frontend’i başlat
+npm run dev
+
+
+Beklenen:
+
+Tarayıcıda açılır: http://localhost:5173
+
+4) Sistemi test etme (Login)
+4.1 Kullanıcı kaydı (Register)
+
+Projede register endpoint varsa:
+
+UI’da register ekranı varsa oradan kayıt ol
+
+Yoksa Thunder Client / Postman ile:
+
+POST http://localhost:5001/api/auth/register
+
+{
+  "email": "test@test.com",
+  "password": "12345678"
+}
+
+4.2 Login
+
+UI login ekranında:
+
+Email: taha@test.com
+
+Password: 12345678
+
+Beklenen:
+
+Dashboard’a yönlendirir
+
+Sidebar’da Trust Score görünür
+
+Risk paneli SAFE/SUSPICIOUS/CRITICAL durumlarına göre UI tepki verir

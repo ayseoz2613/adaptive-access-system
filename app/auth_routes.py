@@ -16,6 +16,9 @@ from . import db
 from .models import User, LoginAttempt
 from .risk_data import RiskDataPacket
 
+from .trust_engine import update_trust
+from .risk_trust_fusion import fuse
+
 auth_bp = Blueprint("auth", __name__)
 
 # -----------------------------
@@ -139,21 +142,14 @@ def ensure_session_valid(user: User, jwt_claims: dict):
 # -----------------------------
 # Week 4: Simple risk classification
 # Basit risk sınıflandırması - sadece IP ve cihaz değişimine bakarak
-# Week 5'te daha gelişmiş risk scoring eklenecek
 # -----------------------------
 def classify_risk_simple(ip_changed: bool, device_changed: bool) -> str:
     """
     Basit risk sınıflandırması (Week 4).
-    
-    Bu basit mantık Week 5'te daha gelişmiş risk scoring ile genişletilecek.
     Şu an için sadece IP ve cihaz değişimine bakarak risk seviyesi belirleniyor.
-    
-    Args:
-        ip_changed: IP adresi değişti mi?
-        device_changed: Cihaz bilgisi değişti mi?
-        
+
     Returns:
-        "safe" veya "suspicious" (lowercase - mevcut risk level formatına uyumlu)
+        "safe" veya "suspicious"
     """
     if ip_changed or device_changed:
         return "suspicious"
@@ -178,7 +174,7 @@ def compute_risk_from_last_success(
       - User-Agent değişimi
       - Device değişimi
       - Location değişimi
-    
+
     Returns:
         Tuple[risk_score, risk_level, risk_reasons, ip_changed, device_changed]
     """
@@ -195,18 +191,15 @@ def compute_risk_from_last_success(
     )
 
     if last_ok:
-        # IP değişimi kontrolü - risk flag olarak açık ve okunur
         if last_ok.ip_address and ip and last_ok.ip_address != ip:
             risk_score += 30
             reasons.append("IP changed")
             ip_changed = True
 
-        # User-Agent değişimi kontrolü
         if last_ok.user_agent and user_agent and last_ok.user_agent != user_agent:
             risk_score += 25
             reasons.append("User-Agent changed")
 
-        # Cihaz değişimi kontrolü - risk flag olarak açık ve okunur
         if last_ok.device_info and device_info and last_ok.device_info != device_info:
             risk_score += 25
             reasons.append("Device changed")
@@ -216,7 +209,6 @@ def compute_risk_from_last_success(
             risk_score += 20
             reasons.append("Location changed")
     else:
-        # ilk başarılı login: çok düşük baseline
         risk_score += 3
         reasons.append("First successful login baseline")
 
@@ -241,7 +233,6 @@ def register():
 
     existing = User.query.filter_by(email=email).first()
     if existing:
-        # enumeration engellemek için tek tip mesaj
         return err("REGISTER_DENIED", "Bu email ile kayıt yapılamıyor.", 400, message_key="auth.register_denied")
 
     user = User(email=email)
@@ -251,6 +242,9 @@ def register():
     user.locked_until = None
     user.is_locked = False
     user.token_version = 0
+
+    # ✅ Default trust score (0 başlamasın)
+    user.trust_score = float(getattr(user, "trust_score", 90.0) or 90.0)
 
     db.session.add(user)
     db.session.commit()
@@ -271,11 +265,9 @@ def login():
     device_info = (body.get("device_info") or "").strip() or user_agent
     location = (body.get("location") or "").strip()
 
-    # RiskDataPacket oluştur - her login denemesinde kesin olarak oluşturulur
-    # Bu paket gelecekte Risk Engine'e aktarılacak veriyi temsil eder
     risk_packet = RiskDataPacket.from_request(user_id=None, location=location or None)
-    risk_packet.ip_address = ip  # IP'yi doğru şekilde ayarla
-    risk_packet.device_info = device_info  # Device info'yu doğru şekilde ayarla
+    risk_packet.ip_address = ip
+    risk_packet.device_info = device_info
 
     generic_fail = err(
         "INVALID_CREDENTIALS",
@@ -295,7 +287,7 @@ def login():
     if bool(user.is_locked):
         return err("ACCOUNT_LOCKED", "Account is locked.", 423, message_key="auth.locked")
 
-    # Temporary lock window: attempts should NOT increase (your desired behavior)
+    # Temporary lock window
     if is_temporarily_locked(user):
         return err(
             "TEMP_LOCKED",
@@ -315,11 +307,8 @@ def login():
         user.failed_login_attempts = int(user.failed_login_attempts or 0) + 1
         fails = int(user.failed_login_attempts or 0)
 
-        # RiskDataPacket'i güncelle - user_id'yi ekle
         risk_packet.user_id = user.id
 
-        # Login attempt kaydı - gelecekte risk analizi için kullanılacak
-        # Her login denemesi (başarılı/başarısız) kaydedilir ve risk analizi için veri sağlar
         attempt = LoginAttempt(
             user_id=user.id,
             ip_address=ip,
@@ -336,7 +325,6 @@ def login():
         if lock_seconds:
             user.locked_until = utcnow() + timedelta(seconds=lock_seconds)
 
-            # escalate risk on brute-force thresholds
             attempt.risk_score = 60.0 if lock_seconds < 86400 else 90.0
             attempt.risk_level = "suspicious" if lock_seconds < 86400 else "critical"
             attempt.risk_reasons = f"Brute-force threshold reached ({fails}); lock {lock_seconds}s"
@@ -361,14 +349,12 @@ def login():
     # -------------------------
     # Correct password
     # -------------------------
-    # reset counters
     user.failed_login_attempts = 0
     user.locked_until = None
 
-    # RiskDataPacket'i güncelle - user_id'yi ekle
     risk_packet.user_id = user.id
 
-    # IMPORTANT: defaults (always defined)
+    # defaults
     risk_score = 0.0
     risk_level = "safe"
     ui_state = "normal"
@@ -378,31 +364,47 @@ def login():
     ip_changed = False
     device_changed = False
 
-    # compute risk BEFORE creating attempt
-    # IP değişimi ve cihaz değişimi bilgisi risk flag olarak döndürülür
-    risk_score, risk_level_old, risk_reasons, ip_changed, device_changed = compute_risk_from_last_success(
+    # compute risk (raw)
+    risk_score, _risk_level_old, risk_reasons, ip_changed, device_changed = compute_risk_from_last_success(
         user=user,
         ip=ip,
         user_agent=user_agent,
         device_info=device_info,
         location=location,
     )
-    
-    # Week 4: Basit risk sınıflandırması kullan
-    # Sadece IP ve cihaz değişimine bakarak risk seviyesi belirleniyor
-    # Bu basit mantık Week 5'te daha gelişmiş risk scoring ile genişletilecek
+
+    # week4 simple level (reference only)
     risk_level = classify_risk_simple(ip_changed, device_changed)
-    
-    # Risk seviyesine göre UI state ve alert type belirle
+
+    # -------------------------
+    # Trust update + Risk-Trust Fusion (Week 5)
+    # -------------------------
+    tr = update_trust(
+        current=user.trust_score,
+        success=True,
+        ip_changed=ip_changed,
+        device_changed=device_changed,
+        risk_level=risk_level,
+    )
+    user.trust_score = tr.score
+
+    fz = fuse(
+        risk_score=float(risk_score),
+        trust_score=float(user.trust_score),
+        device_changed=bool(device_changed),
+    )
+
+    adjusted_risk_score = float(fz.adjusted_risk)
+    final_level = fz.final_level     # "safe" | "suspicious" | "critical"
+    final_action = fz.action         # "ALLOW" | "STEP_UP_AUTH" | "DECOY"
+
+    # final decision
+    risk_level = final_level
+    require_mfa = (final_action == "STEP_UP_AUTH")
+
     ui_state = UI_STATE_BY_RISK.get(risk_level, "normal")
     alert_type, message_key = ALERT_BY_RISK.get(risk_level, ("none", "auth.safe"))
-    
-    # Week 4: SUSPICIOUS durumunda MFA zorunlu
-    # Basit risk sınıflandırmasına göre MFA gerekip gerekmediğini belirle
-    require_mfa = (risk_level == "suspicious")
 
-    # Login attempt kaydı - gelecekte risk analizi için kullanılacak
-    # Her login denemesi (başarılı/başarısız) kaydedilir ve risk analizi için veri sağlar
     attempt = LoginAttempt(
         user_id=user.id,
         ip_address=ip,
@@ -416,14 +418,13 @@ def login():
     )
     db.session.add(attempt)
 
-    # update user baseline - IP ve cihaz bilgisini güncelle
     user.last_login_at = utcnow()
     user.last_ip = ip
     user.last_device_info = device_info
-    user.require_mfa = require_mfa  # Week 4: Risk seviyesine göre MFA gereksinimi
+    user.require_mfa = require_mfa
 
-    # Week 4: SUSPICIOUS durumunda MFA zorunlu - token verme
-    if risk_level == "suspicious":
+    # STEP_UP_AUTH => MFA zorunlu (token verme)
+    if final_action == "STEP_UP_AUTH":
         db.session.commit()
         return err(
             "MFA_REQUIRED",
@@ -434,29 +435,33 @@ def login():
                 "require_mfa": True,
                 "risk_level": risk_level,
                 "risk_score": float(risk_score),
+                "adjusted_risk_score": float(adjusted_risk_score),
+                "trust_score": float(user.trust_score or 0),
                 "ip_changed": ip_changed,
                 "device_changed": device_changed,
             },
         )
 
-    # CRITICAL: decoy -> no tokens
-    if risk_level == "critical":
+    # DECOY => decoy ekranı (token verme)
+    if final_action == "DECOY":
         db.session.commit()
         return ok(
             {
                 "risk_level": risk_level,
                 "risk_score": float(risk_score),
-                "ui_state": ui_state,
-                "alert_type": alert_type,
-                "message_key": message_key,
-                # IP değişimi ve cihaz değişimi bilgisi risk flag olarak açık ve okunur
+                "adjusted_risk_score": float(adjusted_risk_score),
+                "trust_score": float(user.trust_score or 0),
+                "ui_state": "decoy",
+                "alert_type": "danger",
+                "message_key": "auth.decoy",
                 "ip_changed": ip_changed,
                 "device_changed": device_changed,
+                "require_mfa": False,
             },
             200,
         )
 
-    # SAFE: issue tokens (SUSPICIOUS durumunda yukarıda MFA gerektirildi)
+    # ALLOW => token ver
     tokens = make_tokens(user)
     db.session.commit()
 
@@ -465,13 +470,17 @@ def login():
             **tokens,
             "risk_level": risk_level,
             "risk_score": float(risk_score),
+
+            # ✅ EN ÖNEMLİ: trust + adjusted risk response'ta var
+            "trust_score": float(user.trust_score or 0),
+            "adjusted_risk_score": float(adjusted_risk_score),
+
             "ui_state": ui_state,
             "alert_type": alert_type,
             "message_key": message_key,
-            # IP değişimi ve cihaz değişimi bilgisi risk flag olarak açık ve okunur
             "ip_changed": ip_changed,
             "device_changed": device_changed,
-            "require_mfa": require_mfa,  # Week 4: Risk seviyesine göre MFA gereksinimi
+            "require_mfa": bool(require_mfa),
         },
         200,
     )
@@ -498,6 +507,11 @@ def me():
             "is_locked": bool(user.is_locked),
             "locked_until": user.locked_until.isoformat() if user.locked_until else None,
             "token_version": int(user.token_version or 0),
+            "trust_score": float(user.trust_score or 0),
+            "last_login_at": user.last_login_at.isoformat() if user.last_login_at else None,
+            "last_ip": user.last_ip,
+            "last_device_info": user.last_device_info,
+            "require_mfa": bool(getattr(user, "require_mfa", False)),
         }
     )
 
