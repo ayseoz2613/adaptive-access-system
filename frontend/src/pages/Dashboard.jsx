@@ -11,59 +11,121 @@ const Dashboard = () => {
 
   const navigate = useNavigate();
 
-  // ✅ Trust score'u burada al (return'ün üstünde!)
+  // Trust score (Sidebar için)
   const trustScore = Number(localStorage.getItem('trust_score') || 0);
 
-  // alert functions
+  // -----------------------------
+  // Helpers
+  // -----------------------------
   const addAlert = (message, type) => {
     const id = Date.now();
-    setAlerts(prev => [...prev, { id, message, type }]);
+    setAlerts((prev) => [...prev, { id, message, type }]);
   };
 
   const removeAlert = (id) => {
-    setAlerts(prev => prev.filter(alert => alert.id !== id));
+    setAlerts((prev) => prev.filter((a) => a.id !== id));
   };
 
-  // risk data fetch
-  useEffect(() => {
-    const fetchRiskStatus = async () => {
-      try {
-        const response = await api.get('/risk/status');
-        updateRiskState(response.data);
-      } catch (error) {
-        // Backend is unreachable, set default safe state
-        updateRiskState({ score: 20, level: 'SAFE' });
-      }
-    };
-    fetchRiskStatus();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  const normalizeLevel = (lvl) => {
+    const x = String(lvl || '').trim().toUpperCase();
+    if (x === 'SAFE') return 'SAFE';
+    if (x === 'SUSPICIOUS') return 'SUSPICIOUS';
+    if (x === 'CRITICAL') return 'CRITICAL';
+    // backend'den "safe/suspicious/critical" gelebilir
+    const y = String(lvl || '').trim().toLowerCase();
+    if (y === 'safe') return 'SAFE';
+    if (y === 'suspicious') return 'SUSPICIOUS';
+    if (y === 'critical') return 'CRITICAL';
+    return 'SAFE';
+  };
 
-  // adaptive UI based on risk state
+  const readRiskFromLocalStorage = () => {
+    const rawLevel = localStorage.getItem('risk_level') || 'safe';
+    const level = normalizeLevel(rawLevel);
+
+    const rawAdjusted = localStorage.getItem('adjusted_risk_score');
+    const rawRisk = localStorage.getItem('risk_score');
+
+    const adjusted = rawAdjusted != null ? Number(rawAdjusted) : NaN;
+    const risk = rawRisk != null ? Number(rawRisk) : NaN;
+
+    const score = !Number.isNaN(adjusted)
+      ? adjusted
+      : !Number.isNaN(risk)
+        ? risk
+        : 20;
+
+    return { score, level };
+  };
+
+  // -----------------------------
+  // State updater
+  // -----------------------------
   const updateRiskState = (data) => {
-    setRiskData(data);
+    const level = normalizeLevel(data.level || data.risk_level);
+    const score = Number(
+      data.score ??
+        data.adjusted_risk_score ??
+        data.risk_score ??
+        readRiskFromLocalStorage().score
+    );
 
-    if (data.level === 'SUSPICIOUS') {
-      addAlert("Unusual activity detected! Please verify your identity.", "warning");
-    } else if (data.level === 'CRITICAL') {
+    setRiskData({ score, level });
+
+    if (level === 'SUSPICIOUS') {
+      addAlert('Unusual activity detected! Please verify your identity.', 'warning');
+    } else if (level === 'CRITICAL') {
       navigate('/decoy');
     }
   };
 
-  // test function to simulate risk level changes
+  // -----------------------------
+  // Fetch risk status (backend varsa)
+  // Yoksa localStorage ile devam
+  // -----------------------------
+  useEffect(() => {
+    // 1) İlk açılışta localStorage -> UI (kanıt)
+    updateRiskState(readRiskFromLocalStorage());
+
+    // 2) Backend endpoint varsa güncelle
+    const fetchRiskStatus = async () => {
+      try {
+        const response = await api.get('/risk/status');
+
+        // response.data bazen {ok:true,data:{...}} olabilir
+        const payload = response.data?.data ?? response.data;
+
+        updateRiskState(payload);
+      } catch (error) {
+        // backend yoksa problem değil, zaten localStorage gösteriyoruz
+        updateRiskState(readRiskFromLocalStorage());
+      }
+    };
+
+    fetchRiskStatus();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // -----------------------------
+  // Dev tools (demo için)
+  // -----------------------------
   const simulateRisk = (newScore, newLevel) => {
+    const lvl = String(newLevel || 'SAFE').toLowerCase();
+
+    // refresh olsa bile kalsın diye
+    localStorage.setItem('risk_level', lvl);
+    localStorage.setItem('adjusted_risk_score', String(newScore));
+
     updateRiskState({ score: newScore, level: newLevel });
   };
 
   return (
     <div className={`dashboard-layout border-${riskData.level.toLowerCase()}`}>
-      
-      {/* ✅ Sidebar artık doğru şekilde render ediliyor */}
       <Sidebar trustScore={trustScore} />
 
       {/* alert container */}
       <div className="toast-container">
-        {alerts.map(alert => (
+        {alerts.map((alert) => (
           <Toast key={alert.id} {...alert} onClose={() => removeAlert(alert.id)} />
         ))}
       </div>
@@ -75,7 +137,6 @@ const Dashboard = () => {
           <p>Security breach detected. Access suspended.</p>
           <div style={{ fontSize: '50px', marginTop: '20px' }}>🔒</div>
 
-          {/* unlock button for testing */}
           <button className="unlock-btn" onClick={() => simulateRisk(20, 'SAFE')}>
             Admin Unlock (Test)
           </button>
@@ -87,11 +148,20 @@ const Dashboard = () => {
 
         {/* test buttons */}
         <div style={{ background: '#eee', padding: '10px', borderRadius: '8px', marginBottom: '20px' }}>
-          <small>🛠️ <strong>Developer Tools (Test Risk Levels):</strong></small><br />
-          <button onClick={() => simulateRisk(20, 'SAFE')} style={{ width: 'auto', marginRight: '5px', background: 'green' }}>
+          <small>
+            🛠️ <strong>Developer Tools (Test Risk Levels):</strong>
+          </small>
+          <br />
+          <button
+            onClick={() => simulateRisk(20, 'SAFE')}
+            style={{ width: 'auto', marginRight: '5px', background: 'green' }}
+          >
             Safe
           </button>
-          <button onClick={() => simulateRisk(55, 'SUSPICIOUS')} style={{ width: 'auto', marginRight: '5px', background: 'orange' }}>
+          <button
+            onClick={() => simulateRisk(55, 'SUSPICIOUS')}
+            style={{ width: 'auto', marginRight: '5px', background: 'orange' }}
+          >
             Suspicious
           </button>
           <button onClick={() => simulateRisk(95, 'CRITICAL')} style={{ width: 'auto', background: 'red' }}>
